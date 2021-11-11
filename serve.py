@@ -9,6 +9,11 @@ from sqlalchemy.exc import IntegrityError
 
 from models.response_model import Stock, StockList, History, Method, Methods
 from models.request_models import User
+from predictions.basic import (linear_approximation, 
+                                quadratic_approximation, 
+                                logarithmic_approximation, 
+                                exponential_approximation
+                                )
 from moex_api import Client, AsyncClient
 from manager import Manager
 from history_cache import HistoryCache
@@ -28,6 +33,13 @@ HEADERS = {
     "Access-Control-Allow-Headers": "X-Requested-With,content-type",
     "Access-Control-Allow-Origin": "*"
 }   
+
+PREDICTION_METHODS = [
+    linear_approximation,
+    quadratic_approximation,
+    logarithmic_approximation,
+    exponential_approximation
+]
 
 @app.get("/stocks", response_model=StockList)
 async def stocks_handler(request: Request):
@@ -286,6 +298,60 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)
     return JSONResponse(content={"detail": "ok"}, headers=HEADERS)
 
 
+@app.get("/predict/{id}", status_code=200, response_model=Methods)
+async def predict_handler(request: Request, id: int):
+    stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
+
+    if stock_info is None:
+        raise HTTPException(status_code=404, detail="Stock not found")
+
+    history: History
+    history_exists = False
+    
+    prev_history = cache[stock_info.shortname]
+    if prev_history is not None:
+        if prev_history.updated.date() == datetime.date.today(): # already exists
+            history = History(
+                ticker = stock_info.shortname,
+                history = prev_history.data
+            )
+            history_exists = True
+
+        start_from_date = (prev_history.last_date + datetime.timedelta(days=1)).isoformat()
+        small_history = prev_history.data
+        backet_size = 3
+    else:
+        start_from_date = "1990-01-01"
+        small_history = []
+        backet_size = 10
+
+    if not history_exists:
+        today = datetime.date.today().strftime(r"%Y-%m-%d")
+        hist = await cli.history(stock_info.shortname, start_from_date, today, backet_size)
+        for h in hist:
+            small_history.append([h[1], h[11]])
+        
+        cache[stock_info.shortname] = small_history
+        cache.save()
+
+        history = History(
+            ticker = stock_info.shortname,
+            history = small_history
+        )
     
 
+    methods = []
 
+    for m in PREDICTION_METHODS:
+        try:
+            p = m(history=history)
+            methods.append(p)
+        except Exception as error:
+            print(str(m), error)
+
+    return Response(
+        Methods(
+            methods = methods
+        ).json(),
+        headers=HEADERS
+    )

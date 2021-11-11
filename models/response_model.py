@@ -6,8 +6,8 @@ HistoryType = Tuple[str, float]
 
 class History(BaseModel):
     ticker: str
-    #history: List[HistoryType]
-    history: List[List[Union[str, float]]]
+    history: List[HistoryType]
+    #history: List[List[Union[str, float]]]
 
 class Stock(BaseModel):
     id: int
@@ -16,8 +16,8 @@ class Stock(BaseModel):
     currency: str
     price: Optional[float]
     change: Optional[float]
-    #history: List[HistoryType] = []
-    history: List[List[Union[str, float]]] = []
+    history: List[HistoryType] = []
+    #history: List[List[Union[str, float]]] = []
     owned: bool = False
     quantity: int = 0
 
