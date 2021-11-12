@@ -1,8 +1,9 @@
-import requests
 import asyncio
-import aiohttp
-from http import HTTPStatus
 import base64
+from http import HTTPStatus
+
+import aiohttp
+import requests
 
 urls = {"history": "https://iss.moex.com/iss/history/engines/%(engine)s/markets/%(market)s/boards/%(board)s/securities/%(security)s.json?from=%(from)s&till=%(till)s",
         "auth": "https://passport.moex.com/authenticate",

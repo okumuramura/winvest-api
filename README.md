@@ -16,4 +16,5 @@ uvicorn serve:app
 - `[POST] /login` - Recive json body with login and password field. Return json with token field if login succsess.
 - `[GET] /portfolio` - Recive token from Authorization header. Return list of user-owned stocks or error 401 if authorization failed.
 - `[POST] /stocks/add/{id}` - Recive token from Authorization header. Add stock with id = `{id}` to user portfolio.
+- `[GET] /predict/{id}` - ...
 - `[GET] /docs` - Documentation

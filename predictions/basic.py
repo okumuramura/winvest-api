@@ -1,14 +1,17 @@
 import sys
+
 sys.path.append("..")
 
+from math import exp, log
+
 from models.response_model import History, Method
-from predictions.utils.algebraic_functions import calculate_error, linear, quadratic, exponential, logarithmic
-from math import log, exp
+
+from .utils.algebraic_functions import (calculate_error, exponential, linear,
+                                        logarithmic, quadratic)
 
 
 def linear_approximation(history: History) -> Method:
     data = list(zip(*history.history))[1]
-    print(data)
 
     alpha1_1 = 0
     alpha2 = 0

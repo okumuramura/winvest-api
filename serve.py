@@ -1,26 +1,24 @@
-from typing import Dict, List, Tuple
-
-from fastapi import FastAPI, Response, HTTPException, Request, Header, Body
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import bcrypt
-
-from sqlalchemy.exc import IntegrityError
-
-from models.response_model import Stock, StockList, History, Method, Methods
-from models.request_models import User
-from predictions.basic import (linear_approximation, 
-                                quadratic_approximation, 
-                                logarithmic_approximation, 
-                                exponential_approximation
-                                )
-from moex_api import Client, AsyncClient
-from manager import Manager
-from history_cache import HistoryCache
-import db
+import asyncio
 import datetime
 import time
-import asyncio
+from typing import Dict, List, Tuple
+
+import bcrypt
+from fastapi import (Body, FastAPI, Header, HTTPException, Request, Response,
+                     status)
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
+
+import db
+from history_cache import HistoryCache
+from manager import Manager
+from models.request_models import User
+from models.response_model import History, Method, Methods, Stock, StockList
+from moex_api import AsyncClient, Client
+from predictions.basic import (exponential_approximation, linear_approximation,
+                               logarithmic_approximation,
+                               quadratic_approximation)
 
 app = FastAPI()
 #cli = Client()
@@ -41,7 +39,7 @@ PREDICTION_METHODS = [
     exponential_approximation
 ]
 
-@app.get("/stocks", response_model=StockList)
+@app.get("/stocks", status_code=status.HTTP_200_OK, response_model=StockList)
 async def stocks_handler(request: Request):
     token = request.headers.get("Authorization", None)
     users_stocks = {}
@@ -80,7 +78,7 @@ async def stocks_handler(request: Request):
 
     return Response(content=StockList(stocks = stocks_list).json(), headers=HEADERS)
 
-@app.get("/stocks/{id}", response_model=Stock)
+@app.get("/stocks/{id}", status_code=status.HTTP_200_OK, response_model=Stock)
 async def stock_handler(response: Response, id: int, h: bool = False):
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
     if stock_info is None:
@@ -123,11 +121,11 @@ async def stock_handler(response: Response, id: int, h: bool = False):
 
     return Response(content=stock.json(), headers=HEADERS)
 
-@app.get("/history/stocks/{id}", status_code=200, response_model=History)
+@app.get("/history/stocks/{id}", status_code=status.HTTP_200_OK, response_model=History)
 async def history_handler(request: Request, id: int):
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
     if stock_info is None:
-        raise HTTPException(status_code=404, detail="Stock not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found")
 
     prev_history = cache[stock_info.shortname]
     if prev_history is not None:
@@ -166,7 +164,7 @@ async def history_handler(request: Request, id: int):
     
 
 
-@app.post("/register", status_code=201)
+@app.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_handler(request_user: User):
     password_hash = bcrypt.hashpw(request_user.password, bcrypt.gensalt(10))
     user = db.User(request_user.login, password_hash)
@@ -180,7 +178,7 @@ async def register_handler(request_user: User):
     return JSONResponse({"detail": "ok"}, headers=HEADERS)
 
 
-@app.post("/login", status_code=200)
+@app.post("/login", status_code=status.HTTP_200_OK)
 async def login_handler(request_user: User):
     user: db.User = manager.session.query(db.User).filter(db.User.login == request_user.login).first()
     if user is None:
@@ -196,7 +194,7 @@ async def login_handler(request_user: User):
 
     return JSONResponse(content = {"token": token.token}, headers = HEADERS)
 
-@app.get("/portfolio", status_code=200, response_model=StockList)
+@app.get("/portfolio", status_code=status.HTTP_200_OK, response_model=StockList)
 async def portfolio_handler(request: Request):
 
     try:
@@ -267,7 +265,7 @@ async def portfolio_handler(request: Request):
     )
     
 
-@app.post("/stocks/add/{id}", status_code=200)
+@app.post("/stocks/add/{id}", status_code=status.HTTP_200_OK)
 async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)):
     token: str = request.headers.get("Authorization", None)
     
@@ -286,7 +284,11 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)
     if stock is None:
         raise HTTPException(status_code=404, detail="Stock not found")
 
-    portfolio: db.Portfolio = manager.session.query(db.Portfolio).filter((db.Portfolio.user_id == user.id) & (db.Portfolio.stock_id == id)).first()
+    portfolio: db.Portfolio = (
+        manager.session.query(db.Portfolio)
+        .filter((db.Portfolio.user_id == user.id) & (db.Portfolio.stock_id == id))
+        .first()
+    )
 
     if portfolio is None:
         portfolio = db.Portfolio(stock = stock)
@@ -298,7 +300,7 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)
     return JSONResponse(content={"detail": "ok"}, headers=HEADERS)
 
 
-@app.get("/predict/{id}", status_code=200, response_model=Methods)
+@app.get("/predict/{id}", status_code=status.HTTP_200_OK, response_model=Methods)
 async def predict_handler(request: Request, id: int):
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
 

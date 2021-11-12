@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 import db
 
+
 class Manager:
     def __init__(self, db: str) -> None:
         self.engine = create_engine(db)

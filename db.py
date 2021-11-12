@@ -1,15 +1,13 @@
 from __future__ import annotations
-from typing import Optional, Union, List, Dict, Any
+
 import datetime
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from sqlalchemy import create_engine
-from sqlalchemy import MetaData, ForeignKey
-from sqlalchemy import Table, Column
-from sqlalchemy import Integer, Time, String, Boolean, DateTime
+from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer,
+                        MetaData, String, Table, Time, create_engine)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
-from sqlalchemy import select
 
 Base = declarative_base()
 
