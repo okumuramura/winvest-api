@@ -7,7 +7,7 @@ from math import exp, log
 from models.response_model import History, Method
 
 from .utils.algebraic_functions import (calculate_error, exponential, linear,
-                                        logarithmic, quadratic)
+                                        logarithmic, quadratic, holt_win)
 
 
 def linear_approximation(history: History) -> Method:
@@ -68,6 +68,7 @@ def quadratic_approximation(history: History) -> Method:
 
     return method
 
+
 def logarithmic_approximation(history: History) -> Method:
     data = list(zip(*history.history))[1]
 
@@ -92,6 +93,7 @@ def logarithmic_approximation(history: History) -> Method:
 
     return method
 
+
 def exponential_approximation(history: History) -> Method:
     data = list(zip(*history.history))[1]
 
@@ -112,6 +114,26 @@ def exponential_approximation(history: History) -> Method:
         type = 'exp',
         data = [a, b],
         error = calculate_error(exponential, (a, b), data)
+    )
+
+    return method
+
+
+def holt_win_fcast(history: History) -> Method:
+    data = list(zip(*history.history))[1]
+
+    fcast_len = 30
+    train_index = int(0.75 * len(data))
+    data_to_train = data[:train_index]
+    data_to_test = data[train_index:]
+    test_fcast = holt_win(data_to_train, len(data_to_test))
+    fcast = holt_win(data, fcast_len)
+
+    method = Method(
+        name = 'Holt-win',
+        type = 'holt-win',
+        data = fcast,
+        error = calculate_error(holt_win, test_fcast, data_to_test)
     )
 
     return method

@@ -18,7 +18,7 @@ from models.response_model import History, Method, Methods, Stock, StockList
 from moex_api import AsyncClient, Client
 from predictions.basic import (exponential_approximation, linear_approximation,
                                logarithmic_approximation,
-                               quadratic_approximation)
+                               quadratic_approximation, holt_win_fcast)
 
 app = FastAPI()
 #cli = Client()
@@ -36,7 +36,8 @@ PREDICTION_METHODS = [
     linear_approximation,
     quadratic_approximation,
     logarithmic_approximation,
-    exponential_approximation
+    exponential_approximation,
+    holt_win_fcast
 ]
 
 @app.get("/stocks", status_code=status.HTTP_200_OK, response_model=StockList)
