@@ -19,3 +19,16 @@ uvicorn serve:app
 - `[POST] /stocks/remove/{id}` - Recive token from Authorization header. Removing stock with id = `{id}` from user's portfolio.
 - `[GET] /predict/{id}` - ...
 - `[GET] /docs` - Documentation
+
+## GUI
+### Additional requirements
+```
+pip install PyQt5
+```
+### Start GUI
+```
+python gui.py
+```
+> API server must be running for correct operation!
+### Alternative GUI
+- Web interface via React JS: https://github.com/kulisk/winvest-frontend

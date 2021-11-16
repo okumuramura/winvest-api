@@ -135,8 +135,8 @@ def holt_win_fcast(history: History) -> Method:
         name = "Holt Win",
         type = "dots",
         data = list(fcast),
-        #error = calculate_error(holt_win, test_fcast, data_to_test)
-        error = 0
+        error = calculate_error(holt_win, test_fcast, data_to_test)
+        #error = 0
     )
 
     return method
