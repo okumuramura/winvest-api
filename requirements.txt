@@ -57,3 +57,4 @@ uvicorn==0.15.0
 wcwidth==0.2.5
 yarl==1.7.2
 yfinance==0.1.64
+statsmodels==0.13.1

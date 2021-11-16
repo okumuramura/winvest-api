@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
-HistoryType = Tuple[str, float]
+HistoryType = Tuple[str, Optional[float]]
 
 class History(BaseModel):
     ticker: str

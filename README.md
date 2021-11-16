@@ -15,6 +15,7 @@ uvicorn serve:app
 - `[POST] /register` - Registration method. Recive json body with login and password fields. Return status code 200 if registration succsess.
 - `[POST] /login` - Recive json body with login and password field. Return json with token field if login succsess.
 - `[GET] /portfolio` - Recive token from Authorization header. Return list of user-owned stocks or error 401 if authorization failed.
-- `[POST] /stocks/add/{id}` - Recive token from Authorization header. Add stock with id = `{id}` to user portfolio.
+- `[POST] /stocks/add/{id}` - Recive token from Authorization header. Adding stock with id = `{id}` to user's portfolio.
+- `[POST] /stocks/remove/{id}` - Recive token from Authorization header. Removing stock with id = `{id}` from user's portfolio.
 - `[GET] /predict/{id}` - ...
 - `[GET] /docs` - Documentation

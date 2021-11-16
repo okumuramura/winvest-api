@@ -7,11 +7,12 @@ from math import exp, log
 from models.response_model import History, Method
 
 from .utils.algebraic_functions import (calculate_error, exponential, linear,
-                                        logarithmic, quadratic)
+                                        logarithmic, quadratic, holt_win)
 
 
 def linear_approximation(history: History) -> Method:
     data = list(zip(*history.history))[1]
+    data = [d for d in data if d is not None]
 
     alpha1_1 = 0
     alpha2 = 0
@@ -37,6 +38,7 @@ def linear_approximation(history: History) -> Method:
 
 def quadratic_approximation(history: History) -> Method:
     data = list(zip(*history.history))[1]
+    data = [d for d in data if d is not None]
 
     alpha2_1 = 0.
     alpha1_1 = 0.
@@ -70,6 +72,7 @@ def quadratic_approximation(history: History) -> Method:
 
 def logarithmic_approximation(history: History) -> Method:
     data = list(zip(*history.history))[1]
+    data = [d for d in data if d is not None]
 
     alpha1_1 = 0.
     alpha0_1 = 0.
@@ -94,6 +97,7 @@ def logarithmic_approximation(history: History) -> Method:
 
 def exponential_approximation(history: History) -> Method:
     data = list(zip(*history.history))[1]
+    data = [d for d in data if d is not None]
 
     alpha1_1 = 0.
     alpha0_1 = 0.
@@ -112,6 +116,27 @@ def exponential_approximation(history: History) -> Method:
         type = 'exp',
         data = [a, b],
         error = calculate_error(exponential, (a, b), data)
+    )
+
+    return method
+
+def holt_win_fcast(history: History) -> Method:
+    data = list(zip(*history.history))[1]
+    data = [d for d in data if d is not None]
+
+    fcast_len = 60
+    train_index = int(0.9 * len(data))
+    data_to_train = data[:train_index]
+    data_to_test = data[train_index:]
+    test_fcast = holt_win(data_to_train, len(data_to_test))
+    fcast = holt_win(data, fcast_len)
+
+    method = Method(
+        name = "Holt Win",
+        type = "dots",
+        data = list(fcast),
+        #error = calculate_error(holt_win, test_fcast, data_to_test)
+        error = 0
     )
 
     return method

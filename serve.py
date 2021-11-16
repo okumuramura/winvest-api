@@ -18,7 +18,8 @@ from models.response_model import History, Method, Methods, Stock, StockList
 from moex_api import AsyncClient, Client
 from predictions.basic import (exponential_approximation, linear_approximation,
                                logarithmic_approximation,
-                               quadratic_approximation)
+                               quadratic_approximation,
+                               holt_win_fcast)
 
 app = FastAPI()
 #cli = Client()
@@ -36,7 +37,8 @@ PREDICTION_METHODS = [
     linear_approximation,
     quadratic_approximation,
     logarithmic_approximation,
-    exponential_approximation
+    exponential_approximation,
+    holt_win_fcast
 ]
 
 @app.get("/stocks", status_code=status.HTTP_200_OK, response_model=StockList)
@@ -270,19 +272,19 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)
     token: str = request.headers.get("Authorization", None)
     
     if token is None:
-        raise HTTPException(status_code=401, detail="Authorization requied")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization requied")
 
     db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
 
     if db_token is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     user = db_token.user
 
     stock: db.Stock = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
 
     if stock is None:
-        raise HTTPException(status_code=404, detail="Stock not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found")
 
     portfolio: db.Portfolio = (
         manager.session.query(db.Portfolio)
@@ -298,6 +300,37 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)
     manager.session.commit()
 
     return JSONResponse(content={"detail": "ok"}, headers=HEADERS)
+
+@app.post("/stocks/remove/{id}", status_code=status.HTTP_200_OK)
+async def remove_stock_handler(request: Request, id: int, quantity: int = Body(...)):
+    token: str = request.headers.get("Authorization", None)
+
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization requied")
+
+    db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
+
+    if db_token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    user = db_token.user
+
+    stock: db.Stock = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
+
+    if stock is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found")
+
+    portfolio: db.Portfolio = (
+        manager.session.query(db.Portfolio)
+        .filter((db.Portfolio.user_id == user.id) & (db.Portfolio.stock_id == id))
+        .first()
+    )
+
+    if portfolio is not None:
+        manager.session.delete(portfolio)
+        manager.session.commit()
+
+    return Response(headers=HEADERS)
 
 
 @app.get("/predict/{id}", status_code=status.HTTP_200_OK, response_model=Methods)
