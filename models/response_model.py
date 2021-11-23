@@ -24,6 +24,10 @@ class Stock(BaseModel):
 class StockList(BaseModel):
     stocks: List[Stock]
 
+class Portfolio(BaseModel):
+    stocks: List[Stock]
+    total_value: float
+
 class Method(BaseModel):
     name: str
     type: str

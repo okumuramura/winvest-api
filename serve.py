@@ -14,7 +14,7 @@ import db
 from history_cache import HistoryCache
 from manager import Manager
 from models.request_models import User
-from models.response_model import History, Method, Methods, Stock, StockList
+from models.response_model import History, Method, Methods, Stock, StockList, Portfolio
 from moex_api import AsyncClient, Client
 from predictions.basic import (exponential_approximation, linear_approximation,
                                logarithmic_approximation,
@@ -81,7 +81,19 @@ async def stocks_handler(request: Request):
     return Response(content=StockList(stocks = stocks_list).json(), headers=HEADERS)
 
 @app.get("/stocks/{id}", status_code=status.HTTP_200_OK, response_model=Stock)
-async def stock_handler(response: Response, id: int, h: bool = False):
+async def stock_handler(request: Request, id: int, h: bool = False):
+    token = request.headers.get("Authorization", None)
+    user_stocks = {}
+    if token is not None:
+        db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
+        if db_token is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = db_token.user
+        stocks: List[Tuple[db.Portfolio, db.Stock]] = (manager.session.query(db.Portfolio, db.Stock)
+                                .join(db.Stock).filter(db.Portfolio.user_id == user.id).all())
+        for p, s in stocks:
+            user_stocks.update({s.shortname: p.quantity})
+
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
     if stock_info is None:
         raise HTTPException(status_code=404, detail="Stock not found")
@@ -98,6 +110,10 @@ async def stock_handler(response: Response, id: int, h: bool = False):
         price = price,
         change = change
     )
+
+    if stock_info.shortname in user_stocks:
+        stock.owned = True
+        stock.quantity = user_stocks[stock_info.shortname]
 
     if h:  
         prev_history = cache[stock_info.shortname]
@@ -196,7 +212,7 @@ async def login_handler(request_user: User):
 
     return JSONResponse(content = {"token": token.token}, headers = HEADERS)
 
-@app.get("/portfolio", status_code=status.HTTP_200_OK, response_model=StockList)
+@app.get("/portfolio", status_code=status.HTTP_200_OK, response_model=Portfolio)
 async def portfolio_handler(request: Request):
 
     try:
@@ -221,6 +237,7 @@ async def portfolio_handler(request: Request):
     market = await cli.actual()
 
     data = []
+    total_value = 0
 
     actual_stock = 0
     user_stock = tickers[0][1]
@@ -258,11 +275,11 @@ async def portfolio_handler(request: Request):
             owned = True,
             quantity = p.quantity
         )
-
+        total_value += d[0]
         stocks_list.append(stock)
     
     return Response(
-        content=StockList(stocks = stocks_list).json(),
+        content=Portfolio(stocks = stocks_list, total_value=total_value).json(),
         headers=HEADERS
     )
     
