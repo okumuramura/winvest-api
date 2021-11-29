@@ -48,7 +48,7 @@ async def stocks_handler(request: Request):
     if token is not None:
         db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
         if db_token is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise HTTPException(status_code=401, detail="Invalid token", headers=HEADERS)
         user = db_token.user
         stocks: List[Tuple[db.Portfolio, db.Stock]] = (manager.session.query(db.Portfolio, db.Stock)
                                 .join(db.Stock).filter(db.Portfolio.user_id == user.id).all())
@@ -87,7 +87,7 @@ async def stock_handler(request: Request, id: int, h: bool = False):
     if token is not None:
         db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
         if db_token is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise HTTPException(status_code=401, detail="Invalid token", headers=HEADERS)
         user = db_token.user
         stocks: List[Tuple[db.Portfolio, db.Stock]] = (manager.session.query(db.Portfolio, db.Stock)
                                 .join(db.Stock).filter(db.Portfolio.user_id == user.id).all())
@@ -96,7 +96,7 @@ async def stock_handler(request: Request, id: int, h: bool = False):
 
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
     if stock_info is None:
-        raise HTTPException(status_code=404, detail="Stock not found")
+        raise HTTPException(status_code=404, detail="Stock not found", headers= HEADERS)
 
     market_data = await cli.actual_individual(stock_info.shortname)
     price = market_data[12]
@@ -143,7 +143,7 @@ async def stock_handler(request: Request, id: int, h: bool = False):
 async def history_handler(request: Request, id: int):
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
     if stock_info is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found", headers=HEADERS)
 
     prev_history = cache[stock_info.shortname]
     if prev_history is not None:
@@ -191,7 +191,7 @@ async def register_handler(request_user: User):
         manager.session.commit()
     except IntegrityError:
         manager.session.rollback()
-        raise HTTPException(status_code=406, detail="Login already exists")
+        raise HTTPException(status_code=406, detail="Login already exists", headers=HEADERS)
 
     return JSONResponse({"detail": "ok"}, headers=HEADERS)
 
@@ -200,10 +200,10 @@ async def register_handler(request_user: User):
 async def login_handler(request_user: User):
     user: db.User = manager.session.query(db.User).filter(db.User.login == request_user.login).first()
     if user is None:
-        raise HTTPException(status_code=406, detail="User is not found")
+        raise HTTPException(status_code=406, detail="User is not found", headers=HEADERS)
     
     if not bcrypt.checkpw(request_user.password, user.password):
-        raise HTTPException(status_code=406, detail="Wrong password")
+        raise HTTPException(status_code=406, detail="Wrong password", headers=HEADERS)
     
     token = db.Token(user.id)
 
@@ -218,12 +218,12 @@ async def portfolio_handler(request: Request):
     try:
         token: str = request.headers["Authorization"]
     except KeyError:
-        raise HTTPException(status_code=401, detail="Authorization requied")
+        raise HTTPException(status_code=401, detail="Authorization requied", headers=HEADERS)
 
     db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
 
     if db_token is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token", headers=HEADERS)
 
     user = db_token.user
 
@@ -289,19 +289,19 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)
     token: str = request.headers.get("Authorization", None)
     
     if token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization requied")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization requied", headers=HEADERS)
 
     db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
 
     if db_token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token", headers=HEADERS)
 
     user = db_token.user
 
     stock: db.Stock = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
 
     if stock is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found", headers=HEADERS)
 
     portfolio: db.Portfolio = (
         manager.session.query(db.Portfolio)
@@ -323,19 +323,19 @@ async def remove_stock_handler(request: Request, id: int, quantity: int = Body(.
     token: str = request.headers.get("Authorization", None)
 
     if token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization requied")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization requied", headers=HEADERS)
 
     db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
 
     if db_token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token", headers=HEADERS)
 
     user = db_token.user
 
     stock: db.Stock = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
 
     if stock is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found", headers=HEADERS)
 
     portfolio: db.Portfolio = (
         manager.session.query(db.Portfolio)
@@ -355,7 +355,7 @@ async def predict_handler(request: Request, id: int):
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
 
     if stock_info is None:
-        raise HTTPException(status_code=404, detail="Stock not found")
+        raise HTTPException(status_code=404, detail="Stock not found", headers=HEADERS)
 
     history: History
     history_exists = False

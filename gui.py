@@ -617,7 +617,7 @@ class NewStocksList(StocksList):
         super().__init__(token=token, header=header)
 
 class Portfolio(StocksList):
-    def __init__(self, token: str = None, header: Optional[Header] = None):
+    def __init__(self, token: Optional[str] = None, header: Optional[Header] = None):
         super().__init__(token=token, header=header)
 
     def load_stocks(self):
@@ -660,16 +660,23 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.setLayout(self.main_layout)
 
     def stock_info(self, id: int):
+        aw = self.active_window
+        self.active_window == 2
         self.stock_page = StockPage(id, self.header, token=self.token)
         self.setCentralWidget(self.stock_page)
-        self.stock_page.returned.connect(self.show_stocks_list)
+        if aw == 0:
+            self.stock_page.returned.connect(self.show_stocks_list)
+        elif aw == 1:
+            self.stock_page.returned.connect(self.show_portfolio)
 
     def show_stocks_list(self):
+        self.active_window = 0
         self.stocker = NewStocksList(header=self.header)
         self.stocker.stock_selected.connect(self.stock_info)
         self.setCentralWidget(self.stocker)
 
     def show_portfolio(self):
+        self.active_window = 1
         self.portfolio = Portfolio(token=self.token, header=self.header)
         self.portfolio.stock_selected.connect(self.stock_info)
         self.setCentralWidget(self.portfolio)
@@ -681,9 +688,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def logged_out(self):
         self.username = None
         self.token = None
+        if self.active_window == 1:
+            self.show_stocks_list()
 
     def search(self, pattern: str):
-        self.stocker.apply_filter(pattern)
+        if self.active_window == 0:
+            self.stocker.apply_filter(pattern)
+        elif self.active_window == 1:
+            self.portfolio.apply_filter(pattern)
 
 
 
