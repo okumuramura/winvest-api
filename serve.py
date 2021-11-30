@@ -7,6 +7,7 @@ import bcrypt
 from fastapi import (Body, FastAPI, Header, HTTPException, Request, Response,
                      status)
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 
@@ -32,6 +33,18 @@ HEADERS = {
     "Access-Control-Allow-Headers": "X-Requested-With,content-type",
     "Access-Control-Allow-Origin": "*"
 }   
+
+origins = [
+    "http://localhost:3000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"]
+)
 
 PREDICTION_METHODS = [
     linear_approximation,
