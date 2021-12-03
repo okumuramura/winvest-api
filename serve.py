@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 import bcrypt
 from fastapi import (Body, FastAPI, Header, HTTPException, Request, Response,
@@ -244,7 +244,7 @@ async def portfolio_handler(request: Request):
                 .query(db.Portfolio, db.Stock)
                 .join(db.Stock)
                 .filter(db.Portfolio.user_id == user.id)
-                .order_by(db.Stock.shortname).all()
+                .all()
     )
 
     market = await cli.actual()
@@ -252,27 +252,10 @@ async def portfolio_handler(request: Request):
     data = []
     total_value = 0
 
-    actual_stock = 0
-    user_stock = tickers[0][1]
+    market_stocks = {s[0]:(s[12], s[25]) for s in market}
 
-    for s in market:
-        short = s[0]
-        price = s[12]
-        change = s[25]
-
-        if user_stock.shortname < short:
-            data.append((None, None))
-            actual_stock += 1
-            if actual_stock == len(tickers):
-                break
-            user_stock = tickers[actual_stock][1]
-
-        if user_stock.shortname == short:
-            data.append((price, change))
-            actual_stock += 1
-            if actual_stock == len(tickers):
-                break
-            user_stock = tickers[actual_stock][1]
+    for p, s in tickers:
+        data.append(market_stocks.get(s.shortname, (None, None)))
 
     stocks_list = []
 
@@ -298,7 +281,7 @@ async def portfolio_handler(request: Request):
     
 
 @app.post("/stocks/add/{id}", status_code=status.HTTP_200_OK)
-async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)):
+async def add_stock_handler(request: Request, id: int, quantity: int = Body(..., embed=True)):
     token: str = request.headers.get("Authorization", None)
     
     if token is None:
@@ -332,7 +315,7 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...)
     return JSONResponse(content={"detail": "ok"}, headers=HEADERS)
 
 @app.post("/stocks/remove/{id}", status_code=status.HTTP_200_OK)
-async def remove_stock_handler(request: Request, id: int, quantity: int = Body(...)):
+async def remove_stock_handler(request: Request, id: int):
     token: str = request.headers.get("Authorization", None)
 
     if token is None:
