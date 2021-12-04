@@ -306,7 +306,7 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...,
     )
 
     if portfolio is None:
-        portfolio = db.Portfolio(user_id = user, stock = stock)
+        portfolio = db.Portfolio(user = user, stock = stock)
     
     portfolio.quantity = quantity
 
