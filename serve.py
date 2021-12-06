@@ -8,7 +8,6 @@ from fastapi import (Body, FastAPI, Header, HTTPException, Request, Response,
                      status)
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 
 import db
@@ -54,6 +53,8 @@ PREDICTION_METHODS = [
     holt_win_fcast
 ]
 
+ALLOW_HISTORY_NONE = False
+
 @app.get("/stocks", status_code=status.HTTP_200_OK, response_model=StockList)
 async def stocks_handler(request: Request):
     token = request.headers.get("Authorization", None)
@@ -74,6 +75,7 @@ async def stocks_handler(request: Request):
         short = s[0]
         price = s[12]
         change = s[25]
+        deals = s[54]
         stock_info = manager.session.query(db.Stock).filter(db.Stock.shortname == short).first()
         if stock_info is not None:
             stock = Stock(
@@ -82,7 +84,8 @@ async def stocks_handler(request: Request):
                 shortname = stock_info.shortname,
                 currency = stock_info.currency,
                 price = price,
-                change = change
+                change = change,
+                volume_of_deals = deals
             )
             if stock_info.shortname in users_stocks:
                 stock.owned = True
@@ -90,7 +93,14 @@ async def stocks_handler(request: Request):
             stocks_list.append(stock)
         else:
             print("NOT IN DB:", short, price)
+    
+    stocks_list = sorted(
+        stocks_list, 
+        # key=lambda x: x.shortname,
+        key=lambda x: 0 if x.volume_of_deals is None else x.volume_of_deals,
+        reverse=True)
 
+    print("%d stocks in total" % len(stocks_list))
     return Response(content=StockList(stocks = stocks_list).json(), headers=HEADERS)
 
 @app.get("/stocks/{id}", status_code=status.HTTP_200_OK, response_model=Stock)
@@ -114,6 +124,7 @@ async def stock_handler(request: Request, id: int, h: bool = False):
     market_data = await cli.actual_individual(stock_info.shortname)
     price = market_data[12]
     change = market_data[25]
+    deals = market_data[54]
 
     stock = Stock(
         id = stock_info.id,
@@ -121,7 +132,8 @@ async def stock_handler(request: Request, id: int, h: bool = False):
         shortname = stock_info.shortname,
         currency = stock_info.currency,
         price = price,
-        change = change
+        change = change,
+        volume_of_deals = deals
     )
 
     if stock_info.shortname in user_stocks:
@@ -146,7 +158,11 @@ async def stock_handler(request: Request, id: int, h: bool = False):
         today = datetime.date.today().strftime(r"%Y-%m-%d")
         history = await cli.history(stock_info.shortname, start_from_date, today, backet_size)
         for h in history:
-            small_history.append([h[1], h[11]])
+            if h[11] is not None or ALLOW_HISTORY_NONE:
+                small_history.append([h[1], h[11]])
+
+        cache[stock_info.shortname] = small_history
+        cache.save()
 
         stock.history = small_history
 
@@ -180,7 +196,8 @@ async def history_handler(request: Request, id: int):
     today = datetime.date.today().strftime(r"%Y-%m-%d")
     history = await cli.history(stock_info.shortname, start_from_date, today, backet_size)
     for h in history:
-        small_history.append([h[1], h[11]])
+        if h[11] is not None or ALLOW_HISTORY_NONE:
+            small_history.append([h[1], h[11]])
     
     cache[stock_info.shortname] = small_history
     cache.save()
@@ -252,7 +269,7 @@ async def portfolio_handler(request: Request):
     data = []
     total_value = 0
 
-    market_stocks = {s[0]:(s[12], s[25]) for s in market}
+    market_stocks = {s[0]:(s[12], s[25], s[54]) for s in market}
 
     for p, s in tickers:
         data.append(market_stocks.get(s.shortname, (None, None)))
@@ -268,14 +285,20 @@ async def portfolio_handler(request: Request):
             currency = s.currency,
             price = d[0],
             change = d[1],
+            volume_of_deals = d[2],
             owned = True,
             quantity = p.quantity
         )
-        total_value += d[0]
+        total_value += 0 if d[0] is None else float(d[0]) * p.quantity
         stocks_list.append(stock)
     
+    stocks_list = sorted(
+        stocks_list, 
+        key=lambda x: 0 if x.volume_of_deals is None else x.volume_of_deals,
+        reverse=True)
+
     return Response(
-        content=Portfolio(stocks = stocks_list, total_value=total_value).json(),
+        content=Portfolio(stocks=stocks_list, total_value=total_value, username=user.login).json(),
         headers=HEADERS
     )
     

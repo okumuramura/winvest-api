@@ -154,7 +154,8 @@ class Header(QtWidgets.QWidget):
         self.logged_in = False
         self.search_input = QtWidgets.QLineEdit()
         self.search_input.setPlaceholderText("Поиск")
-        self.search_input.returnPressed.connect(self.search_activate)
+        #self.search_input.returnPressed.connect(self.search_activate)
+        self.search_input.textChanged.connect(self.search_activate)
 
         self.icon = QtWidgets.QLabel()
         self.icon_font = QtGui.QFont()
@@ -247,9 +248,6 @@ class Header(QtWidgets.QWidget):
 
     def search_activate(self):
         self.searched.emit(self.search_input.text())
-            
-        
-
 
 class StockPage(QtWidgets.QWidget):
     class MplCanvas(FigureCanvasQTAgg):
@@ -287,7 +285,35 @@ class StockPage(QtWidgets.QWidget):
         self.price_label.setAlignment(QtCore.Qt.AlignLeft)
         self.change_label.setAlignment(QtCore.Qt.AlignLeft)
         self.change_procent.setAlignment(QtCore.Qt.AlignLeft)
+
+        self.owned_row = QtWidgets.QHBoxLayout()
         self.owned_label = QtWidgets.QLabel("В наличии: ")
+        # self.owned_inc = QtWidgets.QPushButton("+")
+        # self.owned_dec = QtWidgets.QPushButton("-")
+        # self.owned_inc.setMaximumSize(30, 30)
+        # self.owned_dec.setMaximumSize(30, 30)
+        # self.owned_inc.clicked.connect(self.increase_owned)
+        # self.owned_dec.clicked.connect(self.decrease_owned)
+        # self.owned_inc.setEnabled(False)
+        # self.owned_dec.setEnabled(False)
+        # self.owned_input = QtWidgets.QLineEdit()
+        self.owned_input = QtWidgets.QSpinBox()
+        self.owned_input.setEnabled(False)
+        self.owned_row.addWidget(self.owned_label)
+        #self.owned_row.addWidget(self.owned_dec)
+        self.owned_row.addWidget(self.owned_input)
+        #self.owned_row.addWidget(self.owned_inc)
+
+        self.add_remove_row = QtWidgets.QHBoxLayout()
+        self.add_btn = QtWidgets.QPushButton("Добавить")
+        self.remove_btn = QtWidgets.QPushButton("Удалить")
+        self.add_btn.clicked.connect(self.add_stock)
+        self.remove_btn.clicked.connect(self.remove_stock)
+        self.add_btn.setEnabled(False)
+        self.remove_btn.setEnabled(False)
+        self.add_remove_row.addWidget(self.add_btn, 1)
+        self.add_remove_row.addWidget(self.remove_btn, 1)
+
         if header is not None:
             self.main_layout.addWidget(self.header)
         self.token = token
@@ -313,7 +339,9 @@ class StockPage(QtWidgets.QWidget):
         self.right_layout.addWidget(self.change, 1, QtCore.Qt.AlignLeft)
         self.right_layout.addWidget(self.prediction_method, 1, QtCore.Qt.AlignLeft)
         if self.token is not None:
-            self.right_layout.addWidget(self.owned_label, 1, QtCore.Qt.AlignLeft)
+            #self.right_layout.addWidget(self.owned_label, 1, QtCore.Qt.AlignLeft)
+            self.right_layout.addLayout(self.owned_row)
+            self.right_layout.addLayout(self.add_remove_row)
         self.right_layout.addStretch(9)
 
         self.data_layout.addLayout(self.left_layout, 3)
@@ -389,9 +417,16 @@ class StockPage(QtWidgets.QWidget):
             elif self.change_volume < 0:
                 self.change_procent.setStyleSheet("color: rgb(255, 0, 0);")
             if not self.owned:
-                self.owned_label.setText("В наличии: нет")
+                self.owned_input.setValue(0)
+                self.add_btn.setText("Добавить")
+                self.add_btn.setEnabled(True)
+                self.remove_btn.setEnabled(False)
             else:
-                self.owned_label.setText("В наличии: %d шт." % self.quantity)
+                self.owned_input.setValue(self.quantity)
+                self.add_btn.setText("Сохранить")
+                self.add_btn.setEnabled(True)
+                self.remove_btn.setEnabled(True)
+            self.owned_input.setEnabled(True)
 
     def draw_history(self, data: requests.Response):
         if data.status_code == 200:
@@ -462,9 +497,60 @@ class StockPage(QtWidgets.QWidget):
             #self.sc.axes.plot(list(range(self.history_len)), pv)
             #self.prediction_plot, = self.sc.axes.plot(list(range(self.history_len, self.history_len + 61)), ppv, c="r")
             self.sc.draw()
+
+    def add_stock(self):
+        self.add_btn.setEnabled(False)
+        self.remove_btn.setEnabled(False)
+        if self.owned_input.value() <= 0:
+            self.remove_stock()
+            return
+
+        self.th_add = QtCore.QThread()
+        auth_header = {}
+        if self.token is not None:
+            body = json.dumps({"quantity": self.owned_input.value()})
+            auth_header = {"authorization": self.token, "content-type": "application/json"}
+        self.requester_add = Requester(
+            self, 
+            "post", 
+            "http://127.0.0.1:8000/stocks/add/" + str(self.stock_id), 
+            headers=auth_header,
+            body=body)
+        self.requester_add.moveToThread(self.th_add)
+        self.th_add.started.connect(self.requester_add.get)
+        self.requester_add.finished.connect(self.th_add.quit)
+        self.requester_add.finished.connect(self.requester_add.deleteLater)
+        self.th_add.finished.connect(self.th_add.deleteLater)
+        self.requester_add.result.connect(self.stock_updated)
+        self.th_add.start()
+    
+    def remove_stock(self):
+        self.add_btn.setEnabled(False)
+        self.remove_btn.setEnabled(False)
+
+        self.th_rem = QtCore.QThread()
+        auth_header = {}
+        if self.token is not None:
+            auth_header = {"authorization": self.token}
+        self.requester_rem = Requester(self, "post", "http://127.0.0.1:8000/stocks/remove/" + str(self.stock_id), headers=auth_header)
+        self.requester_rem.moveToThread(self.th_rem)
+        self.th_rem.started.connect(self.requester_rem.get)
+        self.requester_rem.finished.connect(self.th_rem.quit)
+        self.requester_rem.finished.connect(self.requester_rem.deleteLater)
+        self.th_rem.finished.connect(self.th_rem.deleteLater)
+        self.requester_rem.result.connect(self.stock_removed)
+        self.th_rem.start()
             
-
-
+    def stock_updated(self, response: requests.Response):
+        self.add_btn.setEnabled(True)
+        self.add_btn.setText("Сохранить")
+        self.remove_btn.setEnabled(True)
+        
+    def stock_removed(self, response: requests.Response):
+        self.owned_input.setValue(0)
+        self.add_btn.setText("Добавить")
+        self.add_btn.setEnabled(True)
+        self.remove_btn.setEnabled(False)
 
     def goback(self, e):
         self.returned.emit()
@@ -619,6 +705,14 @@ class NewStocksList(StocksList):
 class Portfolio(StocksList):
     def __init__(self, token: Optional[str] = None, header: Optional[Header] = None):
         super().__init__(token=token, header=header)
+        self.portfolio_header = QtWidgets.QHBoxLayout()
+        self.portfolio_owner = QtWidgets.QLabel("Портфель")
+        self.portfolio_cost = QtWidgets.QLabel("")
+        self.portfolio_owner.setAlignment(QtCore.Qt.AlignLeft)
+        self.portfolio_cost.setAlignment(QtCore.Qt.AlignRight)
+        self.portfolio_header.addWidget(self.portfolio_owner)
+        self.portfolio_header.addWidget(self.portfolio_cost)
+        self.main_layout.addLayout(self.portfolio_header)
 
     def load_stocks(self):
         #self.main_layout.addWidget(self.loader)
@@ -631,8 +725,17 @@ class Portfolio(StocksList):
         self.requester.finished.connect(self.th.quit)
         self.th.finished.connect(self.th.deleteLater)
         self.requester.result.connect(self.redraw)
+        self.requester.result.connect(self.complete_header)
         #self.th.finished.connect(self.redraw)
         self.th.start()
+
+    def complete_header(self, response: requests.Response):
+        if response.status_code == 200:
+            json_response = response.json()
+            total_cost = float(json_response["total_value"])
+            owner_name = json_response["username"]
+            self.portfolio_cost.setText(f"Общая стоимость: {total_cost:.2f} руб.")
+            self.portfolio_owner.setText("Портфель " + owner_name)
 
 
 class MainWindow(QtWidgets.QMainWindow):

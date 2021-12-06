@@ -17,6 +17,7 @@ class Stock(BaseModel):
     price: Optional[float]
     change: Optional[float]
     history: List[HistoryType] = []
+    volume_of_deals: Optional[float] = None
     #history: List[List[Union[str, float]]] = []
     owned: bool = False
     quantity: int = 0
@@ -25,6 +26,7 @@ class StockList(BaseModel):
     stocks: List[Stock]
 
 class Portfolio(BaseModel):
+    username: str
     stocks: List[Stock]
     total_value: float
 

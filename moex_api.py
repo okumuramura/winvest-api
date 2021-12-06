@@ -5,10 +5,15 @@ from http import HTTPStatus
 import aiohttp
 import requests
 
-urls = {"history": "https://iss.moex.com/iss/history/engines/%(engine)s/markets/%(market)s/boards/%(board)s/securities/%(security)s.json?from=%(from)s&till=%(till)s",
+urls = {"history": "https://iss.moex.com/iss/history/engines/%(engine)s/markets/%(market)s/securities/%(security)s.json?from=%(from)s&till=%(till)s",
         "auth": "https://passport.moex.com/authenticate",
         "actual": "https://iss.moex.com/iss/engines/%(engine)s/markets/%(market)s/boards/%(board)s/securities.json",
         "actual_indi": "https://iss.moex.com/iss/engines/%(engine)s/markets/%(market)s/boards/%(board)s/securities/%(symbol)s.json"}
+
+BOARD_WHITE_LIST = [
+    "TQBR",
+    "EQVL"
+]
 
 class Client:
     def __init__(self):
@@ -81,8 +86,8 @@ class AsyncClient:
         args = {
             "engine": "stock",
             "market": "shares",
-            "board": "tqbr",
-            #"board": "eqvl",
+            #"board": "tqbr",
+            "board": "eqlv",
             "security": security,
             "from": _from,
             "till": _till
@@ -90,6 +95,7 @@ class AsyncClient:
         url = urls["history"] % args + "&start=" + str(start)
         async with session.get(url) as resp:
             data = await resp.json()
+            
 
             return data["history"]["data"]
 
@@ -147,9 +153,9 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(main())
-    exit()
+    # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    # asyncio.run(main())
+    # exit()
 
     import pandas as pd
     cli = Client()
