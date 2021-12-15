@@ -58,7 +58,7 @@ ALLOW_HISTORY_NONE = False
 @app.get("/stocks", status_code=status.HTTP_200_OK, response_model=StockList)
 async def stocks_handler(request: Request):
     token = request.headers.get("Authorization", None)
-    users_stocks = {}
+    users_stocks: Dict[str, db.Portfolio] = {}
     if token is not None:
         db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
         if db_token is None:
@@ -67,7 +67,7 @@ async def stocks_handler(request: Request):
         stocks: List[Tuple[db.Portfolio, db.Stock]] = (manager.session.query(db.Portfolio, db.Stock)
                                 .join(db.Stock).filter(db.Portfolio.user_id == user.id).all())
         for p, s in stocks:
-            users_stocks.update({s.shortname: p.quantity})
+            users_stocks.update({s.shortname: p})
 
     api_stocks_list = await cli.actual()
     stocks_list = []
@@ -89,7 +89,10 @@ async def stocks_handler(request: Request):
             )
             if stock_info.shortname in users_stocks:
                 stock.owned = True
-                stock.quantity = users_stocks[stock_info.shortname]
+                _p = users_stocks[stock_info.shortname]
+                stock.quantity = _p.quantity
+                stock.profit = _p.quantity * price - _p.spent
+
             stocks_list.append(stock)
         else:
             print("NOT IN DB:", short, price)
@@ -106,7 +109,7 @@ async def stocks_handler(request: Request):
 @app.get("/stocks/{id}", status_code=status.HTTP_200_OK, response_model=Stock)
 async def stock_handler(request: Request, id: int, h: bool = False):
     token = request.headers.get("Authorization", None)
-    user_stocks = {}
+    user_stocks: Dict[str, db.Portfolio] = {}
     if token is not None:
         db_token = manager.session.query(db.Token).filter(db.Token.token == token).first()
         if db_token is None:
@@ -115,7 +118,7 @@ async def stock_handler(request: Request, id: int, h: bool = False):
         stocks: List[Tuple[db.Portfolio, db.Stock]] = (manager.session.query(db.Portfolio, db.Stock)
                                 .join(db.Stock).filter(db.Portfolio.user_id == user.id).all())
         for p, s in stocks:
-            user_stocks.update({s.shortname: p.quantity})
+            user_stocks.update({s.shortname: p})
 
     stock_info = manager.session.query(db.Stock).filter(db.Stock.id == id).first()
     if stock_info is None:
@@ -138,7 +141,9 @@ async def stock_handler(request: Request, id: int, h: bool = False):
 
     if stock_info.shortname in user_stocks:
         stock.owned = True
-        stock.quantity = user_stocks[stock_info.shortname]
+        _p = user_stocks[stock_info.shortname]
+        stock.quantity = _p.quantity
+        stock.profit = _p.quantity * price - _p.spent
 
     if h:  
         prev_history = cache[stock_info.shortname]
@@ -268,6 +273,7 @@ async def portfolio_handler(request: Request):
 
     data = []
     total_value = 0
+    total_profit = 0
 
     market_stocks = {s[0]:(s[12], s[25], s[54]) for s in market}
 
@@ -289,7 +295,10 @@ async def portfolio_handler(request: Request):
             owned = True,
             quantity = p.quantity
         )
-        total_value += 0 if d[0] is None else float(d[0]) * p.quantity
+        value = 0 if d[0] is None else float(d[0]) * p.quantity
+        stock.profit = value - p.spent
+        total_value += value
+        total_profit += stock.profit
         stocks_list.append(stock)
     
     stocks_list = sorted(
@@ -298,7 +307,11 @@ async def portfolio_handler(request: Request):
         reverse=True)
 
     return Response(
-        content=Portfolio(stocks=stocks_list, total_value=total_value, username=user.login).json(),
+        content=Portfolio(
+            stocks=stocks_list, 
+            total_value=total_value, 
+            username=user.login, 
+            total_profit=total_profit).json(),
         headers=HEADERS
     )
     
@@ -322,6 +335,9 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...,
     if stock is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stock not found", headers=HEADERS)
 
+    stock_info = await cli.actual_individual(stock.shortname)
+    price = float(stock_info[12])
+
     portfolio: db.Portfolio = (
         manager.session.query(db.Portfolio)
         .filter((db.Portfolio.user_id == user.id) & (db.Portfolio.stock_id == id))
@@ -329,9 +345,13 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...,
     )
 
     if portfolio is None:
-        portfolio = db.Portfolio(user = user, stock = stock)
+        portfolio = db.Portfolio(user = user, stock = stock, spent=0.0)
+        delta = quantity
+    else:
+        delta = portfolio.quantity - quantity
     
     portfolio.quantity = quantity
+    portfolio.spent += price * delta
 
     manager.session.commit()
 

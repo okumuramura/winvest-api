@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
 from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer,
-                        MetaData, String, Table, Time, create_engine)
+                        MetaData, String, Table, Time, create_engine, Float)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
 
@@ -50,6 +50,7 @@ class Portfolio(Base):
     user_id: int = Column(Integer, ForeignKey("users.id"))
     stock_id: int = Column(Integer, ForeignKey("stocks.id"))
     quantity: int = Column(Integer, default=0)
+    spent: float = Column(Float, default=0.0)
 
     user: List[User] = relationship("User", back_populates="portfolio")
     stock: List[Stock] = relationship("Stock", back_populates="portfolio")

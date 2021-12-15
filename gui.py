@@ -13,7 +13,6 @@ import math
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
-
 import sys
 
 class Requester(QtCore.QObject):
@@ -288,21 +287,11 @@ class StockPage(QtWidgets.QWidget):
 
         self.owned_row = QtWidgets.QHBoxLayout()
         self.owned_label = QtWidgets.QLabel("В наличии: ")
-        # self.owned_inc = QtWidgets.QPushButton("+")
-        # self.owned_dec = QtWidgets.QPushButton("-")
-        # self.owned_inc.setMaximumSize(30, 30)
-        # self.owned_dec.setMaximumSize(30, 30)
-        # self.owned_inc.clicked.connect(self.increase_owned)
-        # self.owned_dec.clicked.connect(self.decrease_owned)
-        # self.owned_inc.setEnabled(False)
-        # self.owned_dec.setEnabled(False)
-        # self.owned_input = QtWidgets.QLineEdit()
         self.owned_input = QtWidgets.QSpinBox()
+        self.owned_input.setRange(1, 10000)
         self.owned_input.setEnabled(False)
         self.owned_row.addWidget(self.owned_label)
-        #self.owned_row.addWidget(self.owned_dec)
         self.owned_row.addWidget(self.owned_input)
-        #self.owned_row.addWidget(self.owned_inc)
 
         self.add_remove_row = QtWidgets.QHBoxLayout()
         self.add_btn = QtWidgets.QPushButton("Добавить")
@@ -339,15 +328,12 @@ class StockPage(QtWidgets.QWidget):
         self.right_layout.addWidget(self.change, 1, QtCore.Qt.AlignLeft)
         self.right_layout.addWidget(self.prediction_method, 1, QtCore.Qt.AlignLeft)
         if self.token is not None:
-            #self.right_layout.addWidget(self.owned_label, 1, QtCore.Qt.AlignLeft)
             self.right_layout.addLayout(self.owned_row)
             self.right_layout.addLayout(self.add_remove_row)
         self.right_layout.addStretch(9)
 
         self.data_layout.addLayout(self.left_layout, 3)
         self.data_layout.addLayout(self.right_layout, 1)
-
-        #self.left_layout.addWidget(self.loader)
 
         self.main_layout.addLayout(self.data_layout, 10)
 
@@ -356,13 +342,10 @@ class StockPage(QtWidgets.QWidget):
         self.setLayout(self.main_layout)
 
         self.load_info()
-        #self.draw_history(None)
         self.load_history()
 
     def load_info(self):
-        #self.setCentralWidget(self.loader)
         self.th_info = QtCore.QThread()
-        #self.setLayout(self.loading_layout)
         auth_header = {}
         if self.token is not None:
             auth_header = {"authorization": self.token}
@@ -708,15 +691,18 @@ class Portfolio(StocksList):
         self.portfolio_header = QtWidgets.QHBoxLayout()
         self.portfolio_owner = QtWidgets.QLabel("Портфель")
         self.portfolio_cost = QtWidgets.QLabel("")
+        self.portfolio_profit = QtWidgets.QLabel("Прибыль: 0 руб.")
+        self.portfolio_profit.setToolTip(
+            "Общая прибыль считается с момента добавления акций в портфель")
         self.portfolio_owner.setAlignment(QtCore.Qt.AlignLeft)
         self.portfolio_cost.setAlignment(QtCore.Qt.AlignRight)
-        self.portfolio_header.addWidget(self.portfolio_owner)
-        self.portfolio_header.addWidget(self.portfolio_cost)
+        self.portfolio_profit.setAlignment(QtCore.Qt.AlignRight)
+        self.portfolio_header.addWidget(self.portfolio_owner, 3)
+        self.portfolio_header.addWidget(self.portfolio_cost, 1)
+        self.portfolio_header.addWidget(self.portfolio_profit, 1)
         self.main_layout.addLayout(self.portfolio_header)
 
     def load_stocks(self):
-        #self.main_layout.addWidget(self.loader)
-        #self.setCentralWidget(self.loader)
         self.th = QtCore.QThread()
         #self.setLayout(self.loading_layout)
         self.requester = Requester(self, "get", "http://127.0.0.1:8000/portfolio", headers={"authorization": self.token})
@@ -733,10 +719,11 @@ class Portfolio(StocksList):
         if response.status_code == 200:
             json_response = response.json()
             total_cost = float(json_response["total_value"])
+            total_profit = float(json_response["total_profit"])
             owner_name = json_response["username"]
             self.portfolio_cost.setText(f"Общая стоимость: {total_cost:.2f} руб.")
             self.portfolio_owner.setText("Портфель " + owner_name)
-
+            self.portfolio_profit.setText(f"Прибыль: {total_profit:.2f} руб.")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -744,10 +731,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStyleSheet("background: rgb(255, 255, 255);")
         self.setWindowTitle("Winvest v0.17")
         self.setGeometry(100, 100, 800, 600)
-        # self.main_layout = QtWidgets.QVBoxLayout() 
-        # self.header_layout = QtWidgets.QHBoxLayout()
-        # self.header_layout.addSpacing(20)
-        # self.stocker = StocksList(self)
         self.token = None
         self.header = Header()
         self.header.loggedin.connect(self.logged_in)
@@ -756,11 +739,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.header.portfolio.connect(self.show_portfolio)
         self.header.title.connect(self.show_stocks_list)
         self.show_stocks_list()
-
-        # self.main_layout.addLayout(self.header_layout)
-        # self.main_layout.addWidget(self.stocker)
-
-        # self.setLayout(self.main_layout)
 
     def stock_info(self, id: int):
         aw = self.active_window

@@ -21,6 +21,7 @@ class Stock(BaseModel):
     #history: List[List[Union[str, float]]] = []
     owned: bool = False
     quantity: int = 0
+    profit: float = 0.0
 
 class StockList(BaseModel):
     stocks: List[Stock]
@@ -29,6 +30,7 @@ class Portfolio(BaseModel):
     username: str
     stocks: List[Stock]
     total_value: float
+    total_profit: float
 
 class Method(BaseModel):
     name: str
