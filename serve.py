@@ -348,7 +348,7 @@ async def add_stock_handler(request: Request, id: int, quantity: int = Body(...,
         portfolio = db.Portfolio(user = user, stock = stock, spent=0.0)
         delta = quantity
     else:
-        delta = portfolio.quantity - quantity
+        delta = quantity - portfolio.quantity
     
     portfolio.quantity = quantity
     portfolio.spent += price * delta
