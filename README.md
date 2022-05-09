@@ -1,11 +1,14 @@
 # Winvest API
 ## Install requirements
-```
+```bash
 pip install -r requirements.txt
+# or
+pip install poetry
+poetry install
 ```
 ## Start server
 ```
-uvicorn serve:app
+uvicorn winvest.api.serve:app
 ```
 ## Methods and documentation
 - `[GET] /stocks` - List of stocks with current prices.

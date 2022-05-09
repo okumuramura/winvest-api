@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -7,7 +8,7 @@ from requester import Requester
 
 class Header(QtWidgets.QWidget):
     class RegisterWindow(QtWidgets.QDialog):
-        class Types:
+        class Types(Enum):
             REGISTER = 0
             LOGIN = 1
 
@@ -25,11 +26,11 @@ class Header(QtWidgets.QWidget):
             self.password_input.setEchoMode(
                 QtWidgets.QLineEdit.EchoMode.Password
             )
-            self.submit_btn = QtWidgets.QPushButton("Применить")
+            self.submit_btn = QtWidgets.QPushButton('Применить')
             self.submit_btn.clicked.connect(self.submit)
 
-            self.dialog_layout.addRow("Имя пользователя", self.login_input)
-            self.dialog_layout.addRow("Пароль", self.password_input)
+            self.dialog_layout.addRow('Имя пользователя', self.login_input)
+            self.dialog_layout.addRow('Пароль', self.password_input)
             self.dialog_layout.addWidget(self.submit_btn)
 
             self.setLayout(self.dialog_layout)
@@ -43,16 +44,16 @@ class Header(QtWidgets.QWidget):
 
         def __submit_register(self):
             self.register_body = {
-                "login": self.login_input.text(),
-                "password": self.password_input.text(),
+                'login': self.login_input.text(),
+                'password': self.password_input.text(),
             }
             print(self.register_body)
             self.th_register = QtCore.QThread()
             self.requester_register = Requester(
                 self,
-                "post",
-                "http://127.0.0.1:8000/register",
-                headers={"Content-Type": "application/json"},
+                'post',
+                'http://127.0.0.1:8000/register',
+                headers={'Content-Type': 'application/json'},
                 body=json.dumps(self.register_body),
             )
             self.requester_register.moveToThread(self.th_register)
@@ -67,27 +68,27 @@ class Header(QtWidgets.QWidget):
                 self.__submit_login()
             else:
                 try:
-                    detail = response.json()["detail"]
-                except:
-                    detail = "Unknown error"
+                    detail = response.json()['detail']
+                except KeyError:
+                    detail = 'Unknown error'
                 self.error = QtWidgets.QMessageBox()
-                self.error.setWindowTitle("Ошибка регистрации")
-                self.error.setText("Error: " + detail)
+                self.error.setWindowTitle('Ошибка регистрации')
+                self.error.setText('Error: ' + detail)
                 self.error.show()
                 self.submit_btn.setEnabled(True)
 
         def __submit_login(self):
             self.query = self.login_input.text()
             self.register_body = {
-                "login": self.login_input.text(),
-                "password": self.password_input.text(),
+                'login': self.login_input.text(),
+                'password': self.password_input.text(),
             }
             self.th_login = QtCore.QThread()
             self.requester_login = Requester(
                 self,
-                "post",
-                "http://127.0.0.1:8000/login",
-                headers={"Content-Type": "application/json"},
+                'post',
+                'http://127.0.0.1:8000/login',
+                headers={'Content-Type': 'application/json'},
                 body=json.dumps(self.register_body),
             )
             self.requester_login.moveToThread(self.th_login)
@@ -99,17 +100,17 @@ class Header(QtWidgets.QWidget):
 
         def login_complete(self, response: requests.Response):
             if response.status_code == 200:
-                token: str = response.json()["token"]
+                token: str = response.json()['token']
                 self.result.emit(self.query, token)
                 self.close()
             else:
                 try:
-                    detail = response.json()["detail"]
-                except:
-                    detail = "Unknown error"
+                    detail = response.json()['detail']
+                except KeyError:
+                    detail = 'Unknown error'
                 self.error = QtWidgets.QMessageBox()
-                self.error.setWindowTitle("Ошибка входа")
-                self.error.setText("Error: " + detail)
+                self.error.setWindowTitle('Ошибка входа')
+                self.error.setText('Error: ' + detail)
                 self.error.show()
                 self.submit_btn.setEnabled(True)
 
@@ -124,7 +125,7 @@ class Header(QtWidgets.QWidget):
         self.setMaximumHeight(100)
         self.logged_in = False
         self.search_input = QtWidgets.QLineEdit()
-        self.search_input.setPlaceholderText("Поиск")
+        self.search_input.setPlaceholderText('Поиск')
         # self.search_input.returnPressed.connect(self.search_activate)
         self.search_input.textChanged.connect(self.search_activate)
 
@@ -133,18 +134,18 @@ class Header(QtWidgets.QWidget):
         self.icon_font.setBold(True)
         self.icon_font.setPointSize(21)
         self.icon.setFont(self.icon_font)
-        self.icon.setText("Winvest")
+        self.icon.setText('Winvest')
         self.icon.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
         self.icon.mouseReleaseEvent = lambda x: self.title.emit()
 
-        self.right_button = QtWidgets.QPushButton("Регистрация")
-        self.left_button = QtWidgets.QPushButton("Вход")
+        self.right_button = QtWidgets.QPushButton('Регистрация')
+        self.left_button = QtWidgets.QPushButton('Вход')
 
-        # self.portfolio_button = QtWidgets.QPushButton("Портфель")
-        # self.logout_button = QtWidgets.QPushButton("Выйти")
+        # self.portfolio_button = QtWidgets.QPushButton('Портфель')
+        # self.logout_button = QtWidgets.QPushButton('Выйти')
         self.button_layout = QtWidgets.QHBoxLayout()
         self.setStyleSheet(
-            """
+            '''
             QWidget {
                 background: white;
             }
@@ -155,7 +156,7 @@ class Header(QtWidgets.QWidget):
             QPushButton:hover {
                 text-decoration: underline;
             }
-            """
+            '''
         )
 
         self.button_layout.addWidget(self.left_button)
@@ -163,7 +164,9 @@ class Header(QtWidgets.QWidget):
 
         self.main_layout = QtWidgets.QHBoxLayout()
         self.main_layout.addWidget(self.icon, 10, QtCore.Qt.AlignLeft)
-        self.main_layout.addWidget(self.search_input, 50, QtCore.Qt.AlignCenter)
+        self.main_layout.addWidget(
+            self.search_input, 50, QtCore.Qt.AlignCenter
+        )
         self.main_layout.addStretch(10)
         self.main_layout.addLayout(self.button_layout)
 
@@ -173,14 +176,14 @@ class Header(QtWidgets.QWidget):
 
     def open_register_window(self):
         self.register_window = Header.RegisterWindow(
-            "Регистрация", Header.RegisterWindow.Types.REGISTER
+            'Регистрация', Header.RegisterWindow.Types.REGISTER
         )
         self.register_window.result.connect(self.login_done)
         self.register_window.show()
 
     def open_login_window(self):
         self.login_window = Header.RegisterWindow(
-            "Вход", Header.RegisterWindow.Types.LOGIN
+            'Вход', Header.RegisterWindow.Types.LOGIN
         )
         self.login_window.result.connect(self.login_done)
         self.login_window.show()
@@ -201,24 +204,18 @@ class Header(QtWidgets.QWidget):
 
     def change_buttons_layout(self):
         if self.logged_in:
-            self.left_button.setText("Портфель[%s]" % self.username)
+            self.left_button.setText('Портфель[%s]' % self.username)
             self.left_button.clicked.disconnect(self.open_login_window)
             self.left_button.clicked.connect(self.open_portfolio)
-            self.right_button.setText("Выйти")
+            self.right_button.setText('Выйти')
             self.right_button.clicked.disconnect(self.open_register_window)
             self.right_button.clicked.connect(self.logout)
         else:
-            self.left_button.setText("Войти")
-            try:
-                self.left_button.clicked.disconnect(self.open_portfolio)
-            except:
-                pass
+            self.left_button.setText('Войти')
+            self.left_button.clicked.disconnect(self.open_portfolio)
             self.left_button.clicked.connect(self.open_login_window)
-            self.right_button.setText("Регистрация")
-            try:
-                self.right_button.clicked.disconnect(self.logout)
-            except:
-                pass
+            self.right_button.setText('Регистрация')
+            self.right_button.clicked.disconnect(self.logout)
             self.right_button.clicked.connect(self.open_register_window)
 
     def search_activate(self):

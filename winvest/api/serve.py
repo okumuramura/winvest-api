@@ -2,16 +2,14 @@ import datetime
 from typing import Any, Dict, List, Tuple
 from http import HTTPStatus
 
-import bcrypt
 from fastapi import Body, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import IntegrityError
 
-from winvest.api import logger
+from winvest.api import logger, HEADERS
+from winvest.api.authorization import router
 from winvest.api.manager import Manager
 from winvest.models import db
-from winvest.models.request_models import User
 from winvest.models.response_model import (
     History,
     Methods,
@@ -30,16 +28,11 @@ from winvest.utils.history_cache import HistoryCache
 from winvest.utils.moex_api import AsyncClient
 
 app = FastAPI()
+app.include_router(router=router)
 # cli = Client()
 moex_client = AsyncClient()
 manager = Manager('sqlite:///database.db')
 cache = HistoryCache('./cache')
-
-HEADERS = {
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
-    'Access-Control-Allow-Headers': 'X-Requested-With,content-type',
-    'Access-Control-Allow-Origin': '*',
-}
 
 origins = ['http://localhost:3000']
 
@@ -74,7 +67,9 @@ async def stocks_handler(request: Request) -> Any:
         )
         if db_token is None:
             raise HTTPException(
-                status_code=HTTPStatus.UNAUTHORIZED, detail='Invalid token', headers=HEADERS
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail='Invalid token',
+                headers=HEADERS,
             )
         user = db_token.user
         stocks: List[Tuple[db.Portfolio, db.Stock]] = (
@@ -160,7 +155,9 @@ async def stock_handler(request: Request, id: int, h: bool = False) -> Any:
     )
     if stock_info is None:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail='Stock not found', headers=HEADERS
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Stock not found',
+            headers=HEADERS,
         )
 
     market_data = await moex_client.actual_individual(stock_info.shortname)
@@ -274,48 +271,9 @@ async def history_handler(request: Request, id: int) -> Any:
     )
 
 
-@app.post('/register', status_code=status.HTTP_201_CREATED)
-async def register_handler(request_user: User) -> Any:
-    password_hash = bcrypt.hashpw(request_user.password, bcrypt.gensalt(10))
-    user = db.User(request_user.login, password_hash)
-    manager.session.add(user)
-    try:
-        manager.session.commit()
-    except IntegrityError:
-        manager.session.rollback()
-        raise HTTPException(
-            status_code=406, detail='Login already exists', headers=HEADERS
-        )
-
-    return JSONResponse({'detail': 'ok'}, headers=HEADERS)
-
-
-@app.post('/login', status_code=status.HTTP_200_OK)
-async def login_handler(request_user: User) -> Any:
-    user: db.User = (
-        manager.session.query(db.User)
-        .filter(db.User.login == request_user.login)
-        .first()
-    )
-    if user is None:
-        raise HTTPException(
-            status_code=406, detail='User is not found', headers=HEADERS
-        )
-
-    if not bcrypt.checkpw(request_user.password, user.password):
-        raise HTTPException(
-            status_code=406, detail='Wrong password', headers=HEADERS
-        )
-
-    token = db.Token(user.id)
-
-    manager.session.add(token)
-    manager.session.commit()
-
-    return JSONResponse(content={'token': token.token}, headers=HEADERS)
-
-
-@app.get('/portfolio', status_code=status.HTTP_200_OK, response_model=Portfolio)
+@app.get(
+    '/portfolio', status_code=status.HTTP_200_OK, response_model=Portfolio
+)
 async def portfolio_handler(request: Request) -> Any:
 
     try:
@@ -514,7 +472,9 @@ async def predict_handler(id: int) -> Any:
 
     if stock_info is None:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail='Stock not found', headers=HEADERS
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Stock not found',
+            headers=HEADERS,
         )
 
     history: History
@@ -559,7 +519,7 @@ async def predict_handler(id: int) -> Any:
         try:
             p = m(history=history)
             methods.append(p)
-        except Exception as error:
+        except Exception:
             logger.warning('error in prediction method %s', m.__name__)
 
     return Response(Methods(methods=methods).json(), headers=HEADERS)

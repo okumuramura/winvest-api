@@ -42,5 +42,7 @@ def calculate_error(function, coefficients, data):
             error += (data[i] - function(*coefficients, i)) ** 2 / len(data)
     else:
         for i in range(len(data)):
-            error += (data[i] - function(*coefficients, i + 1)) ** 2 / len(data)
+            error += (data[i] - function(*coefficients, i + 1)) ** 2 / len(
+                data
+            )
     return error

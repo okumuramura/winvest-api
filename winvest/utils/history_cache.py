@@ -13,14 +13,14 @@ class HistoryCache:
         data: List[HistoryType]
 
         def __repr__(self) -> str:
-            return f"Cache<updated: {self.updated}, last date: {self.last_date}, data length: {len(self.data)}>"
+            return f'Cache<{self.updated}, {self.last_date}, {len(self.data)}>'
 
     def __init__(self, cache_file: str = None) -> None:
         self.cache_file = cache_file
         self.cache: Dict[str, HistoryCache.Cache]
 
         if cache_file is not None and exists(cache_file):
-            with open(cache_file, "rb") as cf:
+            with open(cache_file, 'rb') as cf:
                 self.cache = pickle.load(cf)
 
         else:
@@ -42,7 +42,7 @@ class HistoryCache:
 
     def __save(self) -> None:
         if self.cache_file is not None:
-            with open(self.cache_file, "wb") as cf:
+            with open(self.cache_file, 'wb') as cf:
                 pickle.dump(self.cache, cf)
 
     def save(self) -> None:
