@@ -3,7 +3,7 @@ import pickle
 from os.path import exists
 from typing import Dict, List, Optional
 
-from models.response_model import HistoryType
+from winvest.models.response_model import HistoryType
 
 
 class HistoryCache:
@@ -22,7 +22,7 @@ class HistoryCache:
         if cache_file is not None and exists(cache_file):
             with open(cache_file, "rb") as cf:
                 self.cache = pickle.load(cf)
-        
+
         else:
             self.cache = {}
 

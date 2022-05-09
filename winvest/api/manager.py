@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-import db
+from winvest.models import db
 
 
 class Manager:
