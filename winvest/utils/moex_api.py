@@ -1,9 +1,7 @@
 import asyncio
-import base64
-from http import HTTPStatus
 
 import aiohttp
-import requests
+
 
 urls = {
     'history': (
@@ -25,72 +23,6 @@ urls = {
 }
 
 BOARD_WHITE_LIST = ['TQBR', 'EQVL']
-
-
-class Client:
-    def __init__(self):
-        self.session = requests.Session()
-
-    def auth(self, user: str, password: str) -> HTTPStatus:
-        auth_data = (user + ':' + password).encode('utf-8')
-        response = self.session.get(
-            urls['auth'],
-            headers={
-                'Authorization': 'Basic %s' % base64.b64encode(auth_data)[:-1]
-            },
-        )
-        return HTTPStatus(response.status_code)
-
-    def history(self, security: str, _from: str, _till: str):
-        args = {
-            'engine': 'stock',
-            'market': 'shares',
-            'board': 'tqbr',
-            # 'board': 'eqvl',
-            'security': security,
-            'from': _from,
-            'till': _till,
-        }
-
-        data = []
-        data_len = -1
-        start = 0
-
-        while data_len != 0:
-            print((urls['history'] % args) + '&start=' + str(start))
-            response = self.session.get(
-                (urls['history'] % args) + '&start=' + str(start)
-            )
-            print(response.status_code)
-            # print(response.json())
-            if response.status_code == HTTPStatus.OK:
-                d = response.json()['history']['data']
-                data_len = len(d)
-                data.extend(d)
-                start += data_len
-            else:
-                raise Exception('NOOOOOOO')
-
-        return data
-
-    def actual(self, board: str = 'tqbr'):
-        args = {'engine': 'stock', 'market': 'shares', 'board': board}
-
-        response = self.session.get(urls['actual'] % args)
-
-        return response.json()['marketdata']['data']
-
-    def actual_individual(self, symbol: str, board: str = 'tqbr'):
-        args = {
-            'engine': 'stock',
-            'market': 'shares',
-            'board': board,
-            'symbol': symbol,
-        }
-        print(urls['actual_indi'] % args)
-        response = self.session.get(urls['actual_indi'] % args)
-
-        return response.json()['marketdata']['data'][0]
 
 
 class AsyncClient:

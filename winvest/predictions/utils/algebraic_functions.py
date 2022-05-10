@@ -1,21 +1,24 @@
 import math
+from typing import Any, Callable, Tuple
 
 from statsmodels.tsa.api import ExponentialSmoothing
 
+from winvest.models.response_model import History, Method
 
-def linear(a, b, x):
+
+def linear(a: float, b: float, x: float) -> float:
     return a * x + b
 
 
-def quadratic(a, b, c, x):
+def quadratic(a: float, b: float, c: float, x: float) -> float:
     return a * x**2 + b * x + c
 
 
-def logarithmic(a, b, x):
+def logarithmic(a: float, b: float, x: float) -> float:
     return a * math.log(x) + b
 
 
-def exponential(a, b, x):
+def exponential(a: float, b: float, x: float) -> float:
     return a * math.exp(x) + b
 
 
@@ -32,7 +35,11 @@ def holt_win(data, forecast_len):
     return exp_forecast
 
 
-def calculate_error(function, coefficients, data):
+def calculate_error(
+    function: Callable[[History], Method],
+    coefficients: Tuple[float],
+    data: Any,
+) -> float:
     error = 0.0
     if function == holt_win:
         for i in range(len(data)):
@@ -42,7 +49,5 @@ def calculate_error(function, coefficients, data):
             error += (data[i] - function(*coefficients, i)) ** 2 / len(data)
     else:
         for i in range(len(data)):
-            error += (data[i] - function(*coefficients, i + 1)) ** 2 / len(
-                data
-            )
+            error += (data[i] - function(*coefficients, i + 1)) ** 2 / len(data)
     return error

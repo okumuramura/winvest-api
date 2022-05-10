@@ -1,19 +1,22 @@
-from typing import Optional
+import json
 import math
+from typing import Optional
 
-from PyQt5 import QtWidgets, QtCore
 import requests
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-import json
+from PyQt5 import QtCore, QtWidgets
 
+from winvest.gui import logger
 from winvest.gui.header import Header
 from winvest.gui.requester import Requester
 
 
 class StockPage(QtWidgets.QWidget):
     class MplCanvas(FigureCanvasQTAgg):
-        def __init__(self, parent=None, width=5, height=3, dpi=100):
+        def __init__(
+            self, parent=None, width: int = 5, height: int = 3, dpi: int = 100
+        ) -> None:
             fig = Figure(figsize=(width, height), dpi=dpi)
             self.axes = fig.add_subplot(111)
             super().__init__(fig)
@@ -25,7 +28,7 @@ class StockPage(QtWidgets.QWidget):
         id: int,
         header: Optional[Header] = None,
         token: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.stock_id = id
         self.prediction_plot = None
@@ -120,7 +123,7 @@ class StockPage(QtWidgets.QWidget):
         self.load_info()
         self.load_history()
 
-    def load_info(self):
+    def load_info(self) -> None:
         self.th_info = QtCore.QThread()
         auth_header = {}
         if self.token is not None:
@@ -131,6 +134,7 @@ class StockPage(QtWidgets.QWidget):
             f'http://127.0.0.1:8000/stocks/{self.stock_id}',
             headers=auth_header,
         )
+        logger.info('loading info...')
         self.requester_info.moveToThread(self.th_info)
         self.th_info.started.connect(self.requester_info.get)
         self.requester_info.finished.connect(self.th_info.quit)
@@ -139,7 +143,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_info.result.connect(self.draw_info)
         self.th_info.start()
 
-    def load_history(self):
+    def load_history(self) -> None:
         self.left_layout.removeWidget(self.loader)
         self.th_history = QtCore.QThread()
         # self.setLayout(self.loading_layout)
@@ -148,6 +152,7 @@ class StockPage(QtWidgets.QWidget):
             'get',
             f'http://127.0.0.1:8000/history/stocks/{self.stock_id}',
         )
+        logger.info('loading history for stock with id %d', self.stock_id)
         self.requester_history.moveToThread(self.th_history)
         self.th_history.started.connect(self.requester_history.get)
         self.requester_history.finished.connect(self.th_history.quit)
@@ -156,12 +161,13 @@ class StockPage(QtWidgets.QWidget):
         self.requester_history.finished.connect(self.load_predictions)
         self.th_history.start()
 
-    def load_predictions(self):
+    def load_predictions(self) -> None:
         self.th_predictions = QtCore.QThread()
         # self.setLayout(self.loading_layout)
         self.requester_prediction = Requester(
             self, 'get', f'http://127.0.0.1:8000/predict/{self.stock_id}'
         )
+        logger.info('loading predictions for stock with id %d', self.stock_id)
         self.requester_prediction.moveToThread(self.th_predictions)
         self.th_predictions.started.connect(self.requester_prediction.get)
         self.requester_prediction.finished.connect(self.th_predictions.quit)
@@ -169,7 +175,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_prediction.result.connect(self.draw_predictions)
         self.th_predictions.start()
 
-    def draw_info(self, data: requests.Response):
+    def draw_info(self, data: requests.Response) -> None:
         if data.status_code == 200:
             info = data.json()
             self.name: str = info['fullname']
@@ -179,9 +185,7 @@ class StockPage(QtWidgets.QWidget):
             self.owned: bool = info['owned']
             self.quantity: int = info['quantity']
             self.main_label.setText(f'{self.ticker} {self.name}')
-            price = (
-                str(self.price) + ' руб.' if self.price is not None else '-'
-            )
+            price = str(self.price) + ' руб.' if self.price is not None else '-'
             self.price_label.setText('Текущая цена: ' + price)
             self.change_procent.setText(f'{self.change_volume:+}%')
             if self.change_volume > 0:
@@ -200,7 +204,7 @@ class StockPage(QtWidgets.QWidget):
                 self.remove_btn.setEnabled(True)
             self.owned_input.setEnabled(True)
 
-    def draw_history(self, data: requests.Response):
+    def draw_history(self, data: requests.Response) -> None:
         if data.status_code == 200:
             history = data.json()['history']
             _, value = zip(*history)
@@ -221,7 +225,7 @@ class StockPage(QtWidgets.QWidget):
             self.left_layout.removeWidget(self.loader)
             self.left_layout.addWidget(self.sc)
 
-    def draw_predictions(self, data: requests.Response):
+    def draw_predictions(self, data: requests.Response) -> None:
         if data.status_code == 200:
             methods = data.json()['methods']
             try:
@@ -240,7 +244,7 @@ class StockPage(QtWidgets.QWidget):
             except ValueError:
                 pass
 
-    def method_changed(self, index: int):
+    def method_changed(self, index: int) -> None:
         method = self.methods[index]
 
         args = method['data']
@@ -269,15 +273,13 @@ class StockPage(QtWidgets.QWidget):
             f = fs[tp]
 
             _ = [f(*args, x) for x in range(1, self.history_len + 1)]
-            plot_values = [
-                f(*args, x) for x in range(1, self.history_len + 62)
-            ]
+            plot_values = [f(*args, x) for x in range(1, self.history_len + 62)]
             (self.prediction_plot,) = self.sc.axes.plot(
                 list(range(self.history_len + 61)), plot_values, c='r'
             )
             self.sc.draw()
 
-    def add_stock(self):
+    def add_stock(self) -> None:
         self.add_btn.setEnabled(False)
         self.remove_btn.setEnabled(False)
         if self.owned_input.value() <= 0:
@@ -307,7 +309,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_add.result.connect(self.stock_updated)
         self.th_add.start()
 
-    def remove_stock(self):
+    def remove_stock(self) -> None:
         self.add_btn.setEnabled(False)
         self.remove_btn.setEnabled(False)
 
@@ -329,29 +331,31 @@ class StockPage(QtWidgets.QWidget):
         self.requester_rem.result.connect(self.stock_removed)
         self.th_rem.start()
 
-    def stock_updated(self, response: requests.Response):
+    def stock_updated(self, response: requests.Response) -> None:
+        logger.info('stock info updated')
         self.add_btn.setEnabled(True)
         self.add_btn.setText('Сохранить')
         self.remove_btn.setEnabled(True)
 
-    def stock_removed(self, response: requests.Response):
+    def stock_removed(self, response: requests.Response) -> None:
+        logger.info('stock removed from portfolio')
         self.owned_input.setValue(0)
         self.add_btn.setText('Добавить')
         self.add_btn.setEnabled(True)
         self.remove_btn.setEnabled(False)
 
-    def goback(self, e):
+    def goback(self, e) -> None:
         self.returned.emit()
         self.deleteLater()
 
-    def linear(self, a, b, x):
+    def linear(self, a: float, b: float, x: float) -> float:
         return a * x + b
 
-    def quadratic(self, a, b, c, x):
+    def quadratic(self, a: float, b: float, c: float, x: float) -> float:
         return a * x**2 + b * x + c
 
-    def logarithmic(self, a, b, x):
+    def logarithmic(self, a: float, b: float, x: float) -> float:
         return a * math.log(x) + b
 
-    def exponential(self, a, b, x):
+    def exponential(self, a: float, b: float, x: float) -> float:
         return a * math.exp(x) + b

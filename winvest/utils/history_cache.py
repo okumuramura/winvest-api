@@ -1,49 +1,70 @@
 import datetime
+import os
 import pickle
-from os.path import exists
-from typing import Dict, List, Optional
+from typing import Optional, Union
 
-from winvest.models.response_model import HistoryType
+import redis
+
+from winvest.models.response_model import History
+
+REDIS_HOST: str = os.environ.get('REDIS_HOST', '127.0.0.1')
+REDIS_PORT: int = int(os.environ.get('REDIS_PORT', 6379))
+REDIS_PASS: Optional[str] = os.environ.get('REDIS_PASS', None)
 
 
 class HistoryCache:
     class Cache:
-        updated: datetime.datetime
-        last_date: datetime.date
-        data: List[HistoryType]
+        def __init__(
+            self, value: Union[History, float], updated: datetime.datetime
+        ) -> None:
+            self.value = value
+            self.updated = updated
 
-        def __repr__(self) -> str:
-            return f'Cache<{self.updated}, {self.last_date}, {len(self.data)}>'
+    def __init__(
+        self,
+        history_expire: datetime.timedelta = datetime.timedelta(hours=1),
+        price_expirte: datetime.timedelta = datetime.timedelta(minutes=1),
+    ) -> None:
+        self.redis = redis.StrictRedis(REDIS_HOST, REDIS_PORT, 0, REDIS_PASS)
+        self.history_expire = history_expire
+        self.price_expire = price_expirte
 
-    def __init__(self, cache_file: str = None) -> None:
-        self.cache_file = cache_file
-        self.cache: Dict[str, HistoryCache.Cache]
+    def get_history(self, stock_id: int) -> Optional[Cache]:
+        raw_data = self.redis.get(f'stock_{stock_id}_history')
+        updated = self.redis.get(f'stock_{stock_id}_history_updated')
+        if raw_data is None:
+            return None
 
-        if cache_file is not None and exists(cache_file):
-            with open(cache_file, 'rb') as cf:
-                self.cache = pickle.load(cf)
+        updated_date = datetime.datetime.fromisoformat(updated.decode('utf-8'))
+        history_data = pickle.loads(raw_data)
+        return HistoryCache.Cache(history_data, updated_date)
 
-        else:
-            self.cache = {}
+    def save_history(self, stock_id: int, history: History) -> None:
+        history_data = pickle.dumps(history)
+        current_date = datetime.datetime.now().isoformat()
+        self.redis.set(
+            f'stock_{stock_id}_history', history_data, ex=self.history_expire
+        )
+        self.redis.set(
+            f'stock_{stock_id}_history_updated',
+            current_date,
+            ex=self.history_expire,
+        )
 
-    def __getitem__(self, key: str) -> Optional[Cache]:
-        return self.cache.get(key, None)
+    def get_price(self, stock_id: int) -> Optional[Cache]:
+        price = self.redis.get(f'stock_{stock_id}_price')
+        updated = self.redis.get(f'stock_{stock_id}_price_updated')
+        if price is None:
+            return None
+        numeric_price = float(price)
+        updated_date = datetime.datetime.fromisoformat(updated.decode('utf-8'))
+        return HistoryCache.Cache(numeric_price, updated_date)
 
-    def __setitem__(self, key: str, value: List[HistoryType]):
-        node = self.cache.get(key, None)
-        if node is None:
-            node = HistoryCache.Cache()
-
-        node.last_date = datetime.date.fromisoformat(value[-1][0])
-        node.data = value
-        node.updated = datetime.datetime.now()
-
-        self.cache[key] = node
-
-    def __save(self) -> None:
-        if self.cache_file is not None:
-            with open(self.cache_file, 'wb') as cf:
-                pickle.dump(self.cache, cf)
-
-    def save(self) -> None:
-        self.__save()
+    def save_price(self, stock_id: int, price: str) -> None:
+        current_date = datetime.datetime.now().isoformat()
+        self.redis.set(f'stock_{stock_id}_price', price, ex=self.price_expire)
+        self.redis.set(
+            f'stock_{stock_id}_price_updated',
+            current_date,
+            ex=self.price_expire,
+        )

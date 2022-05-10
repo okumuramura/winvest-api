@@ -4,6 +4,7 @@ from enum import Enum
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from winvest.gui import logger
 from winvest.gui.requester import Requester
 
 
@@ -15,7 +16,7 @@ class Header(QtWidgets.QWidget):
 
         result = QtCore.pyqtSignal(str, str)
 
-        def __init__(self, title: str, _type: int):
+        def __init__(self, title: str, _type: int) -> None:
             super().__init__()
             self.setWindowTitle(title)
             self.type = _type
@@ -36,19 +37,21 @@ class Header(QtWidgets.QWidget):
 
             self.setLayout(self.dialog_layout)
 
-        def submit(self):
+        def submit(self) -> None:
             self.submit_btn.setEnabled(False)
             if self.type == Header.RegisterWindow.Types.REGISTER:
                 self.__submit_register()
             else:
                 self.__submit_login()
 
-        def __submit_register(self):
+        def __submit_register(self) -> None:
             self.register_body = {
                 'login': self.login_input.text(),
                 'password': self.password_input.text(),
             }
-            print(self.register_body)
+            logger.info(
+                'register request for user %s', self.register_body['login']
+            )
             self.th_register = QtCore.QThread()
             self.requester_register = Requester(
                 self,
@@ -64,7 +67,7 @@ class Header(QtWidgets.QWidget):
             self.requester_register.result.connect(self.register_complete)
             self.th_register.start()
 
-        def register_complete(self, response: requests.Response):
+        def register_complete(self, response: requests.Response) -> None:
             if response.status_code == 200:
                 self.__submit_login()
             else:
@@ -78,12 +81,15 @@ class Header(QtWidgets.QWidget):
                 self.error.show()
                 self.submit_btn.setEnabled(True)
 
-        def __submit_login(self):
+        def __submit_login(self) -> None:
             self.query = self.login_input.text()
             self.register_body = {
                 'login': self.login_input.text(),
                 'password': self.password_input.text(),
             }
+            logger.info(
+                'sign in request for user %s', self.register_body['login']
+            )
             self.th_login = QtCore.QThread()
             self.requester_login = Requester(
                 self,
@@ -99,7 +105,7 @@ class Header(QtWidgets.QWidget):
             self.requester_login.result.connect(self.login_complete)
             self.th_login.start()
 
-        def login_complete(self, response: requests.Response):
+        def login_complete(self, response: requests.Response) -> None:
             if response.status_code == 200:
                 token: str = response.json()['token']
                 self.result.emit(self.query, token)
@@ -121,7 +127,7 @@ class Header(QtWidgets.QWidget):
     portfolio = QtCore.pyqtSignal()
     title = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setMaximumHeight(100)
         self.logged_in = False
@@ -163,9 +169,7 @@ class Header(QtWidgets.QWidget):
 
         self.main_layout = QtWidgets.QHBoxLayout()
         self.main_layout.addWidget(self.icon, 10, QtCore.Qt.AlignLeft)
-        self.main_layout.addWidget(
-            self.search_input, 50, QtCore.Qt.AlignCenter
-        )
+        self.main_layout.addWidget(self.search_input, 50, QtCore.Qt.AlignCenter)
         self.main_layout.addStretch(10)
         self.main_layout.addLayout(self.button_layout)
 
@@ -173,35 +177,35 @@ class Header(QtWidgets.QWidget):
 
         self.setLayout(self.main_layout)
 
-    def open_register_window(self):
+    def open_register_window(self) -> None:
         self.register_window = Header.RegisterWindow(
             'Регистрация', Header.RegisterWindow.Types.REGISTER
         )
         self.register_window.result.connect(self.login_done)
         self.register_window.show()
 
-    def open_login_window(self):
+    def open_login_window(self) -> None:
         self.login_window = Header.RegisterWindow(
             'Вход', Header.RegisterWindow.Types.LOGIN
         )
         self.login_window.result.connect(self.login_done)
         self.login_window.show()
 
-    def login_done(self, username: str, token: str):
+    def login_done(self, username: str, token: str) -> None:
         self.logged_in = True
         self.username = username
         self.loggedin.emit(username, token)
         self.change_buttons_layout()
 
-    def logout(self):
+    def logout(self) -> None:
         self.logged_in = False
         self.loggedout.emit()
         self.change_buttons_layout()
 
-    def open_portfolio(self):
+    def open_portfolio(self) -> None:
         self.portfolio.emit()
 
-    def change_buttons_layout(self):
+    def change_buttons_layout(self) -> None:
         if self.logged_in:
             self.left_button.setText('Портфель[%s]' % self.username)
             try:
@@ -229,5 +233,5 @@ class Header(QtWidgets.QWidget):
                 pass
             self.right_button.clicked.connect(self.open_register_window)
 
-    def search_activate(self):
+    def search_activate(self) -> None:
         self.searched.emit(self.search_input.text())

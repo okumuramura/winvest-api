@@ -6,9 +6,9 @@ import matplotlib
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from winvest.gui.header import Header
 from winvest.gui.requester import Requester
 from winvest.gui.stock_page import StockPage
-from winvest.gui.header import Header
 
 matplotlib.use('Qt5Agg')
 
@@ -23,7 +23,7 @@ class Stock:
         change: float,
         owned: bool = False,
         quantity: int = 0,
-    ):
+    ) -> None:
         self.id = id
         self.ticker = ticker
         self.name = name
@@ -37,11 +37,11 @@ class StocksList(QtWidgets.QWidget):
     stock_selected = QtCore.pyqtSignal(int)
 
     class Delegate(QtWidgets.QStyledItemDelegate):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self.need_calculate = True
 
-        def set_need_calculate(self, value: bool):
+        def set_need_calculate(self, value: bool) -> None:
             self.need_calculate = value
 
         def paint(
@@ -99,11 +99,11 @@ class StocksList(QtWidgets.QWidget):
                 pen.setColor(QtCore.Qt.black)
                 painter.setPen(pen)
 
-            return super().paint(painter, option, index)
+            super().paint(painter, option, index)
 
     def __init__(
         self, token: Optional[str] = None, header: Optional[Header] = None
-    ):
+    ) -> None:
         super().__init__()
         self.setMinimumSize(1280, 720)
         self.stocks: List[Stock] = []
@@ -125,7 +125,7 @@ class StocksList(QtWidgets.QWidget):
 
         self.setLayout(self.main_layout)
 
-    def load_stocks(self):
+    def load_stocks(self) -> None:
         # self.main_layout.addWidget(self.loader)
         # self.setCentralWidget(self.loader)
         self.th = QtCore.QThread()
@@ -136,10 +136,9 @@ class StocksList(QtWidgets.QWidget):
         self.requester.finished.connect(self.th.quit)
         self.th.finished.connect(self.th.deleteLater)
         self.requester.result.connect(self.redraw)
-        # self.th.finished.connect(self.redraw)
         self.th.start()
 
-    def redraw(self, response: requests.Response):
+    def redraw(self, response: requests.Response) -> None:
         self.main_layout.removeWidget(self.loader_label)
         self.main_layout.addWidget(self.stock_list)
 
@@ -160,7 +159,7 @@ class StocksList(QtWidgets.QWidget):
                 self.stock_item.setData(0, st)
                 self.stock_list.addItem(self.stock_item)
 
-    def apply_filter(self, query: str):
+    def apply_filter(self, query: str) -> None:
         pattern = re.compile(query, re.IGNORECASE)
         self.stock_list.clear()
 
@@ -170,7 +169,7 @@ class StocksList(QtWidgets.QWidget):
                 self.stock_item.setData(0, stock)
                 self.stock_list.addItem(self.stock_item)
 
-    def item_clicked(self, item: QtWidgets.QListWidgetItem):
+    def item_clicked(self, item: QtWidgets.QListWidgetItem) -> None:
         stock: Stock = item.data(0)
         self.stock_selected.emit(stock.id)
 
@@ -181,14 +180,14 @@ class StocksList(QtWidgets.QWidget):
 class NewStocksList(StocksList):
     def __init__(
         self, token: Optional[str] = None, header: Optional[Header] = None
-    ):
+    ) -> None:
         super().__init__(token=token, header=header)
 
 
 class Portfolio(StocksList):
     def __init__(
         self, token: Optional[str] = None, header: Optional[Header] = None
-    ):
+    ) -> None:
         super().__init__(token=token, header=header)
         self.portfolio_header = QtWidgets.QHBoxLayout()
         self.portfolio_owner = QtWidgets.QLabel('Портфель')
@@ -205,7 +204,7 @@ class Portfolio(StocksList):
         self.portfolio_header.addWidget(self.portfolio_profit, 1)
         self.main_layout.addLayout(self.portfolio_header)
 
-    def load_stocks(self):
+    def load_stocks(self) -> None:
         self.th = QtCore.QThread()
         # self.setLayout(self.loading_layout)
         self.requester = Requester(
@@ -223,7 +222,7 @@ class Portfolio(StocksList):
         # self.th.finished.connect(self.redraw)
         self.th.start()
 
-    def complete_header(self, response: requests.Response):
+    def complete_header(self, response: requests.Response) -> None:
         if response.status_code == 200:
             json_response = response.json()
             total_cost = float(json_response['total_value'])
@@ -237,7 +236,7 @@ class Portfolio(StocksList):
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setStyleSheet('background: rgb(255, 255, 255);')
         self.setWindowTitle('Winvest v0.17')
@@ -251,7 +250,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.header.title.connect(self.show_stocks_list)
         self.show_stocks_list()
 
-    def stock_info(self, id: int):
+    def stock_info(self, id: int) -> None:
         aw = self.active_window
         self.active_window == 2
         self.stock_page = StockPage(id, self.header, token=self.token)
@@ -261,29 +260,29 @@ class MainWindow(QtWidgets.QMainWindow):
         elif aw == 1:
             self.stock_page.returned.connect(self.show_portfolio)
 
-    def show_stocks_list(self):
+    def show_stocks_list(self) -> None:
         self.active_window = 0
         self.stocker = NewStocksList(header=self.header)
         self.stocker.stock_selected.connect(self.stock_info)
         self.setCentralWidget(self.stocker)
 
-    def show_portfolio(self):
+    def show_portfolio(self) -> None:
         self.active_window = 1
         self.portfolio = Portfolio(token=self.token, header=self.header)
         self.portfolio.stock_selected.connect(self.stock_info)
         self.setCentralWidget(self.portfolio)
 
-    def logged_in(self, username: str, token: str):
+    def logged_in(self, username: str, token: str) -> None:
         self.username = username
         self.token = token
 
-    def logged_out(self):
+    def logged_out(self) -> None:
         self.username = None
         self.token = None
         if self.active_window == 1:
             self.show_stocks_list()
 
-    def search(self, pattern: str):
+    def search(self, pattern: str) -> None:
         if self.active_window == 0:
             self.stocker.apply_filter(pattern)
         elif self.active_window == 1:
