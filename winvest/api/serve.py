@@ -412,7 +412,7 @@ async def add_stock_handler(
     return JSONResponse(content={'detail': 'ok'}, headers=HEADERS)
 
 
-@app.post('/stocks/remove/{id}', status_code=status.HTTP_200_OK)
+@app.delete('/stocks/{id}', status_code=status.HTTP_200_OK)
 async def remove_stock_handler(request: Request, id: int) -> Any:
     token: str = request.headers.get('Authorization', None)
 

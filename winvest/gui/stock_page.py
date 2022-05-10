@@ -7,8 +7,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 import json
 
-from header import Header
-from requester import Requester
+from winvest.gui.header import Header
+from winvest.gui.requester import Requester
 
 
 class StockPage(QtWidgets.QWidget):
@@ -18,7 +18,7 @@ class StockPage(QtWidgets.QWidget):
             self.axes = fig.add_subplot(111)
             super().__init__(fig)
 
-    returned = QtCore.Signal()
+    returned = QtCore.pyqtSignal()
 
     def __init__(
         self,
@@ -317,8 +317,8 @@ class StockPage(QtWidgets.QWidget):
             auth_header = {'authorization': self.token}
         self.requester_rem = Requester(
             self,
-            'post',
-            f'http://127.0.0.1:8000/stocks/remove/{self.stock_id}',
+            'delete',
+            f'http://127.0.0.1:8000/stocks/{self.stock_id}',
             headers=auth_header,
         )
         self.requester_rem.moveToThread(self.th_rem)

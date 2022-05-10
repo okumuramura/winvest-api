@@ -3,7 +3,8 @@ from enum import Enum
 
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
-from requester import Requester
+
+from winvest.gui.requester import Requester
 
 
 class Header(QtWidgets.QWidget):
@@ -12,7 +13,7 @@ class Header(QtWidgets.QWidget):
             REGISTER = 0
             LOGIN = 1
 
-        result = QtCore.Signal(str, str)
+        result = QtCore.pyqtSignal(str, str)
 
         def __init__(self, title: str, _type: int):
             super().__init__()
@@ -114,11 +115,11 @@ class Header(QtWidgets.QWidget):
                 self.error.show()
                 self.submit_btn.setEnabled(True)
 
-    loggedin = QtCore.Signal(str, str)
-    loggedout = QtCore.Signal()
-    searched = QtCore.Signal(str)
-    portfolio = QtCore.Signal()
-    title = QtCore.Signal()
+    loggedin = QtCore.pyqtSignal(str, str)
+    loggedout = QtCore.pyqtSignal()
+    searched = QtCore.pyqtSignal(str)
+    portfolio = QtCore.pyqtSignal()
+    title = QtCore.pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -141,8 +142,6 @@ class Header(QtWidgets.QWidget):
         self.right_button = QtWidgets.QPushButton('Регистрация')
         self.left_button = QtWidgets.QPushButton('Вход')
 
-        # self.portfolio_button = QtWidgets.QPushButton('Портфель')
-        # self.logout_button = QtWidgets.QPushButton('Выйти')
         self.button_layout = QtWidgets.QHBoxLayout()
         self.setStyleSheet(
             '''
@@ -205,17 +204,29 @@ class Header(QtWidgets.QWidget):
     def change_buttons_layout(self):
         if self.logged_in:
             self.left_button.setText('Портфель[%s]' % self.username)
-            self.left_button.clicked.disconnect(self.open_login_window)
+            try:
+                self.left_button.clicked.disconnect(self.open_login_window)
+            except TypeError:
+                pass
             self.left_button.clicked.connect(self.open_portfolio)
             self.right_button.setText('Выйти')
-            self.right_button.clicked.disconnect(self.open_register_window)
+            try:
+                self.right_button.clicked.disconnect(self.open_register_window)
+            except TypeError:
+                pass
             self.right_button.clicked.connect(self.logout)
         else:
             self.left_button.setText('Войти')
-            self.left_button.clicked.disconnect(self.open_portfolio)
+            try:
+                self.left_button.clicked.disconnect(self.open_portfolio)
+            except TypeError:
+                pass
             self.left_button.clicked.connect(self.open_login_window)
             self.right_button.setText('Регистрация')
-            self.right_button.clicked.disconnect(self.logout)
+            try:
+                self.right_button.clicked.disconnect(self.logout)
+            except TypeError:
+                pass
             self.right_button.clicked.connect(self.open_register_window)
 
     def search_activate(self):

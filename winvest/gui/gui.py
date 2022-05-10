@@ -6,9 +6,9 @@ import matplotlib
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from requester import Requester
-from stock_page import StockPage
-from header import Header
+from winvest.gui.requester import Requester
+from winvest.gui.stock_page import StockPage
+from winvest.gui.header import Header
 
 matplotlib.use('Qt5Agg')
 
@@ -34,7 +34,7 @@ class Stock:
 
 
 class StocksList(QtWidgets.QWidget):
-    stock_selected = QtCore.Signal(int)
+    stock_selected = QtCore.pyqtSignal(int)
 
     class Delegate(QtWidgets.QStyledItemDelegate):
         def __init__(self):

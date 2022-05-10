@@ -6,10 +6,17 @@ pip install -r requirements.txt
 pip install poetry
 poetry install
 ```
+
 ## Start server
 ```
 uvicorn winvest.api.serve:app
 ```
+
+## Docker
+```bash
+docker-compose up -d
+```
+
 ## Methods and documentation
 - `[GET] /stocks` - List of stocks with current prices.
 - `[GET] /stocks/{id}?h=0` - Info about stock with id = `{id}`.  
@@ -19,7 +26,7 @@ uvicorn winvest.api.serve:app
 - `[POST] /login` - Recive json body with login and password field. Return json with token field if login succsess.
 - `[GET] /portfolio` - Recive token from Authorization header. Return list of user-owned stocks or error 401 if authorization failed.
 - `[POST] /stocks/add/{id}` - Recive token from Authorization header. Adding stock with id = `{id}` to user's portfolio.
-- `[POST] /stocks/remove/{id}` - Recive token from Authorization header. Removing stock with id = `{id}` from user's portfolio.
+- `[DELETE] /stocks/{id}` - Recive token from Authorization header. Removing stock with id = `{id}` from user's portfolio.
 - `[GET] /predict/{id}` - Return predictions about stock with id = `{id}` (see Prediction format block).
 - `[GET] /docs` - Documentation
 
@@ -43,6 +50,7 @@ Response on `/predict/{id}`
     ]
 }
 ```
+
 ### Method types  
 Method type can be one of the listed values:
  - `lin`
@@ -60,7 +68,7 @@ pip install PyQt5
 ```
 ### Start GUI
 ```
-python gui.py
+python -m winvest.gui
 ```
 > API server must be running for correct operation!
 ### Alternative GUI

@@ -3,8 +3,8 @@ from PyQt5 import QtCore, QtWidgets
 
 
 class Requester(QtCore.QObject):
-    finished = QtCore.Signal()
-    result = QtCore.Signal(requests.Response)
+    finished = QtCore.pyqtSignal()
+    result = QtCore.pyqtSignal(requests.Response)
 
     def __init__(
         self,

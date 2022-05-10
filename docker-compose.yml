@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  winvest-api:
+    build: .
+    environment:
+      - REDIS_HOST=redis
+    ports:
+      - '8000:8000'
+    links:
+      - redis
+    depends_on:
+      - redis
+  redis:
+    image: redis
+    volumes:
+      - redis:/data
+    ports:
+      - '6379:6379'
+volumes:
+  redis:
+    driver: local
