@@ -1,13 +1,13 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from winvest import moex_client
 from winvest.manager import (
     async_orm_function,
-    orm_function,
     create_operation,
+    orm_function,
     stock_manage,
 )
 from winvest.models import db, response_model

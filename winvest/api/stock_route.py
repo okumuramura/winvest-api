@@ -1,7 +1,7 @@
 from http import HTTPStatus
-from typing import Optional, Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Path, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from winvest.api import auth
 from winvest.manager import stock_manage

@@ -1,8 +1,8 @@
-from typing import Optional, Any
 import asyncio
+from typing import Any, Optional
 
-from pydantic import BaseModel
 import aiohttp
+from pydantic import BaseModel
 
 urls = {
     'history': (

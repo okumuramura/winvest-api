@@ -2,9 +2,8 @@ from http import HTTPStatus
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
 
-from winvest.api import HEADERS, logger
+from winvest.api import logger
 from winvest.manager import user_manage
 from winvest.models import request_models
 
@@ -21,7 +20,6 @@ async def register_handler(request_user: request_models.User) -> Any:
     if user_id is None:
         raise HTTPException(status_code=HTTPStatus.CONFLICT)
     logger.info('new user registered: %s', request_user.login)
-    return JSONResponse({'detail': 'ok'}, headers=HEADERS)
 
 
 @router.post(
@@ -33,5 +31,3 @@ async def login_handler(request_user: request_models.User) -> Any:
     token = user_manage.sign_in(request_user.login, request_user.password)
     if token is None:
         raise HTTPException(status_code=HTTPStatus.CONFLICT)
-
-    return JSONResponse(content={'token': token.token}, headers=HEADERS)

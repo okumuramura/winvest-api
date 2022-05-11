@@ -4,7 +4,7 @@ from enum import Enum
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from winvest.gui import logger, URLs
+from winvest.gui import URLs, logger
 from winvest.gui.requester import Requester
 
 

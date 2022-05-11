@@ -1,5 +1,5 @@
 import math
-from typing import Any, Callable, Tuple, List
+from typing import Any, Callable, List, Tuple
 
 from statsmodels.tsa.api import ExponentialSmoothing
 

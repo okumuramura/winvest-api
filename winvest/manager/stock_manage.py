@@ -1,9 +1,9 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from sqlalchemy.orm import Session, joinedload
 
 from winvest import moex_cache, moex_client
-from winvest.manager import orm_function, async_orm_function
+from winvest.manager import async_orm_function, orm_function
 from winvest.models import db, response_model
 
 

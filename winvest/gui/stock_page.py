@@ -1,13 +1,13 @@
 import json
 import math
-from typing import Optional, Any
+from typing import Any, Optional
 
 import requests
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PyQt5 import QtCore, QtWidgets
 
-from winvest.gui import logger, URLs
+from winvest.gui import URLs, logger
 from winvest.gui.header import Header
 from winvest.gui.requester import Requester
 

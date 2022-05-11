@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, HTTPException, Body
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from winvest.api import strict_auth
 from winvest.manager import portfolio_manage, stock_manage

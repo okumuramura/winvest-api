@@ -1,14 +1,14 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
 
 from winvest.api import (
     authorization_route,
     history_route,
+    operations_route,
     portfolio_route,
     prediction_route,
     stock_route,
-    operations_route,
 )
 
 
