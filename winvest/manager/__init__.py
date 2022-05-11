@@ -50,5 +50,6 @@ def create_operation(
         session.commit()
     except SQLAlchemyError:
         session.rollback()
+        logger.warning('can not create operation %s', operation)
         return None
     return operation

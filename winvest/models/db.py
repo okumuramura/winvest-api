@@ -156,7 +156,7 @@ class Operation(Base):
         Integer, ForeignKey('stocks.id'), nullable=True, default=None
     )
     date: datetime.datetime = Column(DateTime, nullable=False)
-    args: Optional[str] = Column(String(200), nullable=True)
+    args: Optional[str] = Column(String(290), nullable=True)
 
     user: User = relationship('User', back_populates='operations')
     subject: Optional[Stock] = relationship('Stock')

@@ -112,7 +112,7 @@ async def add_stock(
         session.rollback()
         return None
 
-    create_operation(user.id, 'ADD', stock, str(args), session=session)
+    create_operation(user.id, 'ADD', stock.id, str(args), session=session)
 
     return portfolio
 
@@ -133,4 +133,8 @@ def remove_stock(user: db.User, stock_id: int, session: Session = None) -> bool:
     except SQLAlchemyError:
         session.rollback()
         return False
+
+    if portfolio:
+        create_operation(user.id, 'REMOVE', stock_id)
+    
     return bool(portfolio)

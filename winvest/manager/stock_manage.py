@@ -35,7 +35,6 @@ def get_stock_data(
     )
 
 
-@async_orm_function
 async def load_price(stock: db.Stock) -> Optional[response_model.Stock]:
     cached_price = moex_cache.get_price(stock.id)
 
