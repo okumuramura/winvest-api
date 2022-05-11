@@ -320,7 +320,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_rem = Requester(
             self,
             'delete',
-            URLs.STOCKS_LIST,
+            URLs.DELETE_STOCK % self.stock_id,
             headers=auth_header,
         )
         self.requester_rem.moveToThread(self.th_rem)

@@ -51,11 +51,15 @@ async def load_list(
     for stock in stocks:
         market_data = await load_price(stock, session=session)
         if user:
-            owned_data = portfolio_manage.get_stock_data(user.id, stock.id, session=session)
+            owned_data = portfolio_manage.get_stock_data(
+                user.id, stock.id, session=session
+            )
             market_data.owned = owned_data.owned
             market_data.quantity = owned_data.quantity
             if market_data.price is not None:
-                market_data.profit = market_data.price * owned_data.quantity - owned_data.spent
+                market_data.profit = (
+                    market_data.price * owned_data.quantity - owned_data.spent
+                )
         stock_list.append(market_data)
 
     return response_model.StockList(

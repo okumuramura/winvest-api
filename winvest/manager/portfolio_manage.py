@@ -1,9 +1,10 @@
 from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import SQLAlchemyError
 
 from winvest import moex_client
-from winvest.manager import async_orm_function, orm_function
+from winvest.manager import async_orm_function, orm_function, create_operation, stock_manage
 from winvest.models import db, response_model
 
 
@@ -89,11 +90,7 @@ def get_stock_data(
 
     if portfolio is None:
         return response_model.StockOwned(
-            id=stock_id,
-            shortname='-',
-            owned=False,
-            quantity=0,
-            spent=0.0
+            id=stock_id, shortname='-', owned=False, quantity=0, spent=0.0
         )
 
     return response_model.StockOwned(
@@ -101,12 +98,12 @@ def get_stock_data(
         shortname=portfolio.stock.shortname,
         owned=True,
         quantity=portfolio.quantity,
-        spent=portfolio.spent
+        spent=portfolio.spent,
     )
 
 
-@orm_function
-def add_stock(
+@async_orm_function
+async def add_stock(
     user: db.User, stock: db.Stock, quantity: int, session: Session = None
 ) -> Optional[db.Portfolio]:
     portfolio: db.Portfolio = (
@@ -120,5 +117,39 @@ def add_stock(
 
     if not portfolio:
         portfolio = db.Portfolio(user_id=user.id, stock_id=stock.id)
+        session.add(portfolio)
 
+    price = await stock_manage.load_price(stock)
+    if price.price is None:
+        return None
+
+    delta = quantity - portfolio.quantity
     portfolio.quantity = quantity
+    portfolio.spent += price.price * delta
+
+    args = {
+        'quantity': quantity,
+        'by_price': price.price
+    }
+
+    try:
+        session.commit()
+    except SQLAlchemyError:
+        session.rollback()
+        return None
+
+    create_operation(user.id, 'ADD', stock, str(args), session=session)
+
+    return portfolio
+
+
+@orm_function
+def remove_stock(user: db.User, stock_id: int, session: Session = None) -> bool:
+    portfolio = session.query(db.Portfolio).filter((db.Portfolio.user_id == user.id) & (db.Portfolio.stock_id == stock_id)).delete()
+
+    try:
+        session.commit()
+    except SQLAlchemyError:
+        session.rollback()
+        return False
+    return bool(portfolio)

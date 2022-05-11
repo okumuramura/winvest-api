@@ -16,7 +16,9 @@ REDIS_PASS: Optional[str] = os.environ.get('REDIS_PASS', None)
 class HistoryCache:
     class Cache:
         def __init__(
-            self, value: Union[History, MOEXStock, Methods], updated: datetime.datetime
+            self,
+            value: Union[History, MOEXStock, Methods],
+            updated: datetime.datetime,
         ) -> None:
             self.value = value
             self.updated = updated
@@ -44,7 +46,7 @@ class HistoryCache:
         history_data = pickle.dumps(history)
         current_date = datetime.datetime.now().isoformat()
         self.redis.set(
-            f'stock_{stock_id}_history', history_data, ex=self.history_expire
+            f'stock_{stock_id}_history', history_data
         )
         self.redis.set(
             f'stock_{stock_id}_history_updated',
@@ -86,8 +88,12 @@ class HistoryCache:
         current_date = datetime.datetime.now().isoformat()
         predictions_data = pickle.dumps(predictions)
         self.redis.set(
-            f'stock_{stock_id}_predictions', predictions_data, ex=self.history_expire
+            f'stock_{stock_id}_predictions',
+            predictions_data,
+            ex=self.history_expire,
         )
         self.redis.set(
-            f'stock_{stock_id}_predictions_updated', current_date, ex=self.history_expire
+            f'stock_{stock_id}_predictions_updated',
+            current_date,
+            ex=self.history_expire,
         )

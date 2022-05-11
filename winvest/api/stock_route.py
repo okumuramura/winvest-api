@@ -41,6 +41,8 @@ async def stock_handler(
         with_price.owned = owned_info.owned
         with_price.quantity = owned_info.quantity
         if with_price.price is not None:
-            with_price.profit = with_price.price * owned_info.quantity - owned_info.spent
+            with_price.profit = (
+                with_price.price * owned_info.quantity - owned_info.spent
+            )
 
     return with_price

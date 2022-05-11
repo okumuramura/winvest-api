@@ -13,6 +13,7 @@ class URLs:
     PORTFOLIO = API_TEMP % '/portfolio'
     HISTORY_LOAD = API_TEMP % '/history/stocks/%d'
     PREDICT = API_TEMP % '/predict/%d'
-    ADD_STOCK = API_TEMP % '/stocks/add/%d'
+    ADD_STOCK = API_TEMP % '/portfolio/add/%d'
+    DELETE_STOCK = API_TEMP % '/portfolio/%d'
     LOGIN = API_TEMP % '/login'
     REGISTER = API_TEMP % '/register'
