@@ -1,7 +1,8 @@
+from typing import Optional
 import asyncio
 
+from pydantic import BaseModel
 import aiohttp
-
 
 urls = {
     'history': (
@@ -23,6 +24,13 @@ urls = {
 }
 
 BOARD_WHITE_LIST = ['TQBR', 'EQVL']
+
+
+class MOEXStock(BaseModel):
+    ticker: str
+    price: Optional[float]
+    change: Optional[float]
+    deals: Optional[float]
 
 
 class AsyncClient:
@@ -84,7 +92,9 @@ class AsyncClient:
                 data = await resp.json()
                 return data['marketdata']['data']
 
-    async def actual_individual(self, symbol: str, board: str = 'tqbr'):
+    async def actual_individual(
+        self, symbol: str, board: str = 'tqbr'
+    ) -> MOEXStock:
         args = {
             'engine': 'stock',
             'market': 'shares',
@@ -95,4 +105,11 @@ class AsyncClient:
         async with aiohttp.ClientSession() as session:
             async with session.get(urls['actual_indi'] % args) as resp:
                 data = await resp.json()
-                return data['marketdata']['data'][0]
+                stock_info = data['marketdata']['data'][0]
+                ticker = stock_info[0]
+                price = stock_info[12]
+                change = stock_info[25]
+                deals = stock_info[54]
+                return MOEXStock(
+                    ticker=ticker, price=price, change=change, deals=deals
+                )

@@ -7,7 +7,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PyQt5 import QtCore, QtWidgets
 
-from winvest.gui import logger
+from winvest.gui import logger, URLs
 from winvest.gui.header import Header
 from winvest.gui.requester import Requester
 
@@ -131,7 +131,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_info = Requester(
             self,
             'get',
-            f'http://127.0.0.1:8000/stocks/{self.stock_id}',
+            URLs.STOCK_PAGE % self.stock_id,
             headers=auth_header,
         )
         logger.info('loading info...')
@@ -150,7 +150,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_history = Requester(
             self,
             'get',
-            f'http://127.0.0.1:8000/history/stocks/{self.stock_id}',
+            URLs.HISTORY_LOAD % self.stock_id,
         )
         logger.info('loading history for stock with id %d', self.stock_id)
         self.requester_history.moveToThread(self.th_history)
@@ -165,7 +165,7 @@ class StockPage(QtWidgets.QWidget):
         self.th_predictions = QtCore.QThread()
         # self.setLayout(self.loading_layout)
         self.requester_prediction = Requester(
-            self, 'get', f'http://127.0.0.1:8000/predict/{self.stock_id}'
+            self, 'get', URLs.PREDICT % self.stock_id
         )
         logger.info('loading predictions for stock with id %d', self.stock_id)
         self.requester_prediction.moveToThread(self.th_predictions)
@@ -297,7 +297,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_add = Requester(
             self,
             'post',
-            f'http://127.0.0.1:8000/stocks/add/{self.stock_id}',
+            URLs.ADD_STOCK % self.stock_id,
             headers=auth_header,
             body=body,
         )
@@ -320,7 +320,7 @@ class StockPage(QtWidgets.QWidget):
         self.requester_rem = Requester(
             self,
             'delete',
-            f'http://127.0.0.1:8000/stocks/{self.stock_id}',
+            URLs.STOCKS_LIST,
             headers=auth_header,
         )
         self.requester_rem.moveToThread(self.th_rem)

@@ -6,7 +6,15 @@ from typing import List, Optional, Union
 from uuid import uuid4
 
 import bcrypt
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from winvest import Base
@@ -38,15 +46,17 @@ class User(Base):
         if in_hash:
             self.password = password
         else:
-            self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(10)).decode(
-                'utf-8'
-            )
+            self.password = bcrypt.hashpw(
+                password.encode('utf-8'), bcrypt.gensalt(10)
+            ).decode('utf-8')
 
     def __repr__(self) -> str:
         return f'User_{self.id}<{self.login}, {self.password}>'
 
     def check_password(self, password: str) -> bool:
-        return bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
+        return bcrypt.checkpw(
+            password.encode('utf-8'), self.password.encode('utf-8')
+        )
 
 
 class Portfolio(Base):
@@ -58,8 +68,12 @@ class Portfolio(Base):
     quantity: int = Column(Integer, default=0)
     spent: float = Column(Float, default=0.0)
 
-    user: List[User] = relationship('User', back_populates='portfolio')
-    stock: List[Stock] = relationship('Stock', back_populates='portfolio')
+    user: User = relationship('User', back_populates='portfolio')
+    stock: Stock = relationship('Stock', back_populates='portfolio')
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'stock_id', name='_portfolio_unique'),
+    )
 
     def __repr__(self) -> str:
         return f'Portfolio<{self.user_id}, {self.stock_id}, {self.quantity}>'

@@ -17,6 +17,14 @@ class StockTiny(BaseModel):
     shortname: str
 
 
+class StockOwned(BaseModel):
+    id: int
+    shortname: str
+    owned: bool
+    quantity: int
+    spent: float
+
+
 class Stock(BaseModel):
     id: int
     fullname: str
@@ -39,7 +47,9 @@ class StockList(BaseModel):
 
 class Portfolio(BaseModel):
     username: str
-    stocks: StockList
+    stocks: List[Stock]
+    total: int = 0
+    offset: int = 0
     total_value: float
     total_profit: float
 

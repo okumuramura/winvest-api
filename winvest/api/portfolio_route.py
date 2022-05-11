@@ -3,8 +3,8 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, Query
 
 from winvest.api import strict_auth
-from winvest.models import response_model, db
 from winvest.manager import portfolio_manage
+from winvest.models import db, response_model
 
 router = APIRouter()
 

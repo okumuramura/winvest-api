@@ -5,7 +5,8 @@ from typing import Optional, Union
 
 import redis
 
-from winvest.models.response_model import History
+from winvest.models.response_model import History, Methods
+from winvest.utils.moex_api import MOEXStock
 
 REDIS_HOST: str = os.environ.get('REDIS_HOST', '127.0.0.1')
 REDIS_PORT: int = int(os.environ.get('REDIS_PORT', 6379))
@@ -15,7 +16,7 @@ REDIS_PASS: Optional[str] = os.environ.get('REDIS_PASS', None)
 class HistoryCache:
     class Cache:
         def __init__(
-            self, value: Union[History, float], updated: datetime.datetime
+            self, value: Union[History, MOEXStock, Methods], updated: datetime.datetime
         ) -> None:
             self.value = value
             self.updated = updated
@@ -56,15 +57,37 @@ class HistoryCache:
         updated = self.redis.get(f'stock_{stock_id}_price_updated')
         if price is None:
             return None
-        numeric_price = float(price)
+        price_data = pickle.loads(price)
         updated_date = datetime.datetime.fromisoformat(updated.decode('utf-8'))
-        return HistoryCache.Cache(numeric_price, updated_date)
+        return HistoryCache.Cache(price_data, updated_date)
 
-    def save_price(self, stock_id: int, price: str) -> None:
+    def save_price(self, stock_id: int, price: MOEXStock) -> None:
         current_date = datetime.datetime.now().isoformat()
-        self.redis.set(f'stock_{stock_id}_price', price, ex=self.price_expire)
+        price_data = pickle.dumps(price)
+        self.redis.set(
+            f'stock_{stock_id}_price', price_data, ex=self.price_expire
+        )
         self.redis.set(
             f'stock_{stock_id}_price_updated',
             current_date,
             ex=self.price_expire,
+        )
+
+    def get_predictions(self, stock_id: int) -> Optional[Cache]:
+        raw_predictions = self.redis.get(f'stock_{stock_id}_predictions')
+        updated = self.redis.get(f'stock_{stock_id}_predictions_updated')
+        if raw_predictions is None:
+            return None
+        predictions = pickle.loads(raw_predictions)
+        updated_date = datetime.datetime.fromisoformat(updated.decode('utf-8'))
+        return HistoryCache.Cache(predictions, updated_date)
+
+    def save_predisctions(self, stock_id: int, predictions: Methods) -> None:
+        current_date = datetime.datetime.now().isoformat()
+        predictions_data = pickle.dumps(predictions)
+        self.redis.set(
+            f'stock_{stock_id}_predictions', predictions_data, ex=self.history_expire
+        )
+        self.redis.set(
+            f'stock_{stock_id}_predictions_updated', current_date, ex=self.history_expire
         )

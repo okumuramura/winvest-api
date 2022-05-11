@@ -16,7 +16,7 @@ def get_by_user(
 
     total = base_request.count()
     operations: List[db.Operation] = (
-        base_request.options(joinedload(db.Stock))
+        base_request.options(joinedload(db.Operation.subject))
         .offset(offset)
         .limit(limit)
         .all()

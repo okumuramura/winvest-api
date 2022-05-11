@@ -16,7 +16,7 @@ class Requester(QtCore.QObject):
         headers: Any = None,
         body: Any = None,
     ) -> None:
-        super().__init__(parent=parent)
+        super().__init__()
         self.method = method
         self.url = url
         self.headers = headers

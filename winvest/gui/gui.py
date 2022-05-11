@@ -1,11 +1,11 @@
 import re
-import sys
 from typing import List, Optional
 
 import matplotlib
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from winvest.gui import URLs
 from winvest.gui.header import Header
 from winvest.gui.requester import Requester
 from winvest.gui.stock_page import StockPage
@@ -130,7 +130,7 @@ class StocksList(QtWidgets.QWidget):
         # self.setCentralWidget(self.loader)
         self.th = QtCore.QThread()
         # self.setLayout(self.loading_layout)
-        self.requester = Requester(self, 'get', 'http://127.0.0.1:8000/stocks')
+        self.requester = Requester(self, 'get', URLs.STOCKS_LIST)
         self.requester.moveToThread(self.th)
         self.th.started.connect(self.requester.get)
         self.requester.finished.connect(self.th.quit)
@@ -210,7 +210,7 @@ class Portfolio(StocksList):
         self.requester = Requester(
             self,
             'get',
-            'http://127.0.0.1:8000/portfolio',
+            URLs.PORTFOLIO,
             headers={'authorization': self.token},
         )
         self.requester.moveToThread(self.th)
@@ -287,10 +287,3 @@ class MainWindow(QtWidgets.QMainWindow):
             self.stocker.apply_filter(pattern)
         elif self.active_window == 1:
             self.portfolio.apply_filter(pattern)
-
-
-if __name__ == '__main__':
-    app = QtWidgets.QApplication([])
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())

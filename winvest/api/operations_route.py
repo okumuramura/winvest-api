@@ -1,17 +1,17 @@
 from http import HTTPStatus
 from typing import Any
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Depends, Query
 
 from winvest.api import strict_auth
-from winvest.models import response_model, db
 from winvest.manager import operation_manage
+from winvest.models import db, response_model
 
 router = APIRouter()
 
 
 @router.get(
-    '/operations',
+    '/',
     status_code=HTTPStatus.OK,
     response_model=response_model.OperationList,
 )

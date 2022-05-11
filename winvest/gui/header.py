@@ -4,7 +4,7 @@ from enum import Enum
 import requests
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from winvest.gui import logger
+from winvest.gui import logger, URLs
 from winvest.gui.requester import Requester
 
 
@@ -56,7 +56,7 @@ class Header(QtWidgets.QWidget):
             self.requester_register = Requester(
                 self,
                 'post',
-                'http://127.0.0.1:8000/register',
+                URLs.REGISTER,
                 headers={'Content-Type': 'application/json'},
                 body=json.dumps(self.register_body),
             )
@@ -94,7 +94,7 @@ class Header(QtWidgets.QWidget):
             self.requester_login = Requester(
                 self,
                 'post',
-                'http://127.0.0.1:8000/login',
+                URLs.LOGIN,
                 headers={'Content-Type': 'application/json'},
                 body=json.dumps(self.register_body),
             )

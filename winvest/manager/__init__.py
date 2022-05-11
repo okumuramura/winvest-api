@@ -1,6 +1,6 @@
 import logging
 from functools import wraps
-from typing import Any, Callable, Optional, Coroutine
+from typing import Any, Callable, Coroutine, Optional
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session

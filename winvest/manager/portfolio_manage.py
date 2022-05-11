@@ -1,9 +1,9 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from winvest import moex_client
-from winvest.manager import async_orm_function
+from winvest.manager import async_orm_function, orm_function
 from winvest.models import db, response_model
 
 
@@ -31,9 +31,9 @@ async def get_by_user(
     market_stocks = {x[0]: (x[12], x[25], x[54]) for x in market}
 
     for portfolio, stock in tickers:
-        data.append(market_stocks.get(stock.shortname, (None, None)))
+        data.append(market_stocks.get(stock.shortname, (None, None, None)))
 
-    stock_list = []
+    stock_list: List[response_model.Stock] = []
 
     for (portfolio, stock), data_row in zip(tickers, data):
         stock_model = response_model.Stock(
@@ -55,7 +55,7 @@ async def get_by_user(
         stock_model.profit = value - portfolio.spent
         total_value += value
         total_profit += stock_model.profit
-        stock_list.append(stock)
+        stock_list.append(stock_model)
 
     stock_list = sorted(
         stock_list,
@@ -65,9 +65,60 @@ async def get_by_user(
 
     return response_model.Portfolio(
         username='?',
-        stocks=response_model.StockList(
-            stocks=stock_list, total=total, offset=offset
-        ),
+        stocks=stock_list,
+        total=total,
+        offset=offset,
         total_value=total_value,
         total_profit=total_profit,
     )
+
+
+@orm_function
+def get_stock_data(
+    user_id: int, stock_id: int, session: Session = None
+) -> Optional[response_model.StockOwned]:
+    portfolio: db.Portfolio = (
+        session.query(db.Portfolio)
+        .filter(
+            (db.Portfolio.user_id == user_id)
+            & (db.Portfolio.stock_id == stock_id)
+        )
+        .options(joinedload(db.Portfolio.stock))
+        .first()
+    )
+
+    if portfolio is None:
+        return response_model.StockOwned(
+            id=stock_id,
+            shortname='-',
+            owned=False,
+            quantity=0,
+            spent=0.0
+        )
+
+    return response_model.StockOwned(
+        id=stock_id,
+        shortname=portfolio.stock.shortname,
+        owned=True,
+        quantity=portfolio.quantity,
+        spent=portfolio.spent
+    )
+
+
+@orm_function
+def add_stock(
+    user: db.User, stock: db.Stock, quantity: int, session: Session = None
+) -> Optional[db.Portfolio]:
+    portfolio: db.Portfolio = (
+        session.query(db.Portfolio)
+        .filter(
+            (db.Portfolio.user_id == user.id)
+            & (db.Portfolio.stock_id == stock.id)
+        )
+        .first()
+    )
+
+    if not portfolio:
+        portfolio = db.Portfolio(user_id=user.id, stock_id=stock.id)
+
+    portfolio.quantity = quantity
