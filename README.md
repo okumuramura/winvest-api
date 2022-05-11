@@ -8,8 +8,10 @@ poetry install
 ```
 
 ## Start server
-```
+```bash
 uvicorn winvest.api.serve:app
+# or
+python -m winvest.api
 ```
 
 ## Docker

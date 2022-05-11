@@ -1,6 +1,6 @@
 import json
 import math
-from typing import Optional
+from typing import Optional, Any
 
 import requests
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -15,7 +15,7 @@ from winvest.gui.requester import Requester
 class StockPage(QtWidgets.QWidget):
     class MplCanvas(FigureCanvasQTAgg):
         def __init__(
-            self, parent=None, width: int = 5, height: int = 3, dpi: int = 100
+            self, width: int = 5, height: int = 3, dpi: int = 100
         ) -> None:
             fig = Figure(figsize=(width, height), dpi=dpi)
             self.axes = fig.add_subplot(111)
@@ -257,6 +257,9 @@ class StockPage(QtWidgets.QWidget):
             'log': self.logarithmic,
             'exp': self.exponential,
         }
+        if self.sc is None:
+            return
+
         if self.prediction_plot is not None:
             self.sc.axes.lines.remove(self.prediction_plot)
             self.sc.axes.relim(visible_only=True)
@@ -270,7 +273,7 @@ class StockPage(QtWidgets.QWidget):
             )
             self.sc.draw()
         else:
-            f = fs[tp]
+            f: Any = fs[tp]
 
             _ = [f(*args, x) for x in range(1, self.history_len + 1)]
             plot_values = [f(*args, x) for x in range(1, self.history_len + 62)]
@@ -344,7 +347,7 @@ class StockPage(QtWidgets.QWidget):
         self.add_btn.setEnabled(True)
         self.remove_btn.setEnabled(False)
 
-    def goback(self, e) -> None:
+    def goback(self, _: Any) -> None:
         self.returned.emit()
         self.deleteLater()
 

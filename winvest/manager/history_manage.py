@@ -1,16 +1,10 @@
 import datetime
 
-from sqlalchemy.orm import Session
-
 from winvest import ALLOW_HISTORY_NONE, moex_cache, moex_client
-from winvest.manager import async_orm_function
 from winvest.models import db, response_model
 
 
-@async_orm_function
-async def load_up(
-    stock: db.Stock, session: Session = None
-) -> response_model.History:
+async def load_up(stock: db.Stock) -> response_model.History:
     previous_history = moex_cache.get_history(stock.id)
     if previous_history is not None:
         if previous_history.updated.date() == datetime.date.today():

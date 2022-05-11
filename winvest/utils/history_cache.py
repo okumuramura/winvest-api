@@ -35,7 +35,7 @@ class HistoryCache:
     def get_history(self, stock_id: int) -> Optional[Cache]:
         raw_data = self.redis.get(f'stock_{stock_id}_history')
         updated = self.redis.get(f'stock_{stock_id}_history_updated')
-        if raw_data is None:
+        if raw_data is None or updated is None:
             return None
 
         updated_date = datetime.datetime.fromisoformat(updated.decode('utf-8'))
@@ -45,9 +45,7 @@ class HistoryCache:
     def save_history(self, stock_id: int, history: History) -> None:
         history_data = pickle.dumps(history)
         current_date = datetime.datetime.now().isoformat()
-        self.redis.set(
-            f'stock_{stock_id}_history', history_data
-        )
+        self.redis.set(f'stock_{stock_id}_history', history_data)
         self.redis.set(
             f'stock_{stock_id}_history_updated',
             current_date,
@@ -57,7 +55,7 @@ class HistoryCache:
     def get_price(self, stock_id: int) -> Optional[Cache]:
         price = self.redis.get(f'stock_{stock_id}_price')
         updated = self.redis.get(f'stock_{stock_id}_price_updated')
-        if price is None:
+        if price is None or updated is None:
             return None
         price_data = pickle.loads(price)
         updated_date = datetime.datetime.fromisoformat(updated.decode('utf-8'))
@@ -78,7 +76,7 @@ class HistoryCache:
     def get_predictions(self, stock_id: int) -> Optional[Cache]:
         raw_predictions = self.redis.get(f'stock_{stock_id}_predictions')
         updated = self.redis.get(f'stock_{stock_id}_predictions_updated')
-        if raw_predictions is None:
+        if raw_predictions is None or updated is None:
             return None
         predictions = pickle.loads(raw_predictions)
         updated_date = datetime.datetime.fromisoformat(updated.decode('utf-8'))

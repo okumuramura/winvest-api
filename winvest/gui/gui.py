@@ -241,7 +241,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStyleSheet('background: rgb(255, 255, 255);')
         self.setWindowTitle('Winvest v0.17')
         self.setGeometry(100, 100, 800, 600)
-        self.token = None
+        self.token: Optional[str] = None
+        self.username: Optional[str] = None
         self.header = Header()
         self.header.loggedin.connect(self.logged_in)
         self.header.loggedout.connect(self.logged_out)

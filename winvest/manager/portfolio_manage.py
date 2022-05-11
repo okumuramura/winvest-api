@@ -1,10 +1,15 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from winvest import moex_client
-from winvest.manager import async_orm_function, orm_function, create_operation, stock_manage
+from winvest.manager import (
+    async_orm_function,
+    orm_function,
+    create_operation,
+    stock_manage,
+)
 from winvest.models import db, response_model
 
 
@@ -26,8 +31,8 @@ async def get_by_user(
     market = await moex_client.actual()
 
     data = []
-    total_value = 0
-    total_profit = 0
+    total_value = 0.0
+    total_profit = 0.0
 
     market_stocks = {x[0]: (x[12], x[25], x[54]) for x in market}
 
@@ -74,34 +79,6 @@ async def get_by_user(
     )
 
 
-@orm_function
-def get_stock_data(
-    user_id: int, stock_id: int, session: Session = None
-) -> Optional[response_model.StockOwned]:
-    portfolio: db.Portfolio = (
-        session.query(db.Portfolio)
-        .filter(
-            (db.Portfolio.user_id == user_id)
-            & (db.Portfolio.stock_id == stock_id)
-        )
-        .options(joinedload(db.Portfolio.stock))
-        .first()
-    )
-
-    if portfolio is None:
-        return response_model.StockOwned(
-            id=stock_id, shortname='-', owned=False, quantity=0, spent=0.0
-        )
-
-    return response_model.StockOwned(
-        id=stock_id,
-        shortname=portfolio.stock.shortname,
-        owned=True,
-        quantity=portfolio.quantity,
-        spent=portfolio.spent,
-    )
-
-
 @async_orm_function
 async def add_stock(
     user: db.User, stock: db.Stock, quantity: int, session: Session = None
@@ -127,10 +104,7 @@ async def add_stock(
     portfolio.quantity = quantity
     portfolio.spent += price.price * delta
 
-    args = {
-        'quantity': quantity,
-        'by_price': price.price
-    }
+    args = {'quantity': quantity, 'by_price': price.price}
 
     try:
         session.commit()
@@ -145,7 +119,14 @@ async def add_stock(
 
 @orm_function
 def remove_stock(user: db.User, stock_id: int, session: Session = None) -> bool:
-    portfolio = session.query(db.Portfolio).filter((db.Portfolio.user_id == user.id) & (db.Portfolio.stock_id == stock_id)).delete()
+    portfolio = (
+        session.query(db.Portfolio)
+        .filter(
+            (db.Portfolio.user_id == user.id)
+            & (db.Portfolio.stock_id == stock_id)
+        )
+        .delete()
+    )
 
     try:
         session.commit()

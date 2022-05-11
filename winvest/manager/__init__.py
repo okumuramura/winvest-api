@@ -23,7 +23,7 @@ def orm_function(func: Callable[..., Any]):  # type: ignore
     return wrapper
 
 
-def async_orm_function(func: Coroutine):  # type: ignore
+def async_orm_function(func: Callable[..., Coroutine[Any, Any, Any]]):  # type: ignore
     @wraps(func)
     async def wrapper(*args, **kwargs):  # type: ignore
         if kwargs.get('session') is None:

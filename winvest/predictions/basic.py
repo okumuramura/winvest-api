@@ -1,4 +1,5 @@
 from math import exp, log
+from typing import List
 
 from winvest.models.response_model import History, Method
 from winvest.predictions.utils.algebraic_functions import (
@@ -11,14 +12,17 @@ from winvest.predictions.utils.algebraic_functions import (
 )
 
 
-def linear_approximation(history: History) -> Method:
-    data = list(zip(*history.history))[1]
-    data = [d for d in data if d is not None]
+def prepare_data(history: History) -> List[float]:
+    return [x for _, x in zip(*history.history) if x is not None]
 
-    alpha1_1 = 0
-    alpha2 = 0
-    sum_x = 0
-    sum_y = 0
+
+def linear_approximation(history: History) -> Method:
+    data = prepare_data(history)
+
+    alpha1_1 = 0.0
+    alpha2 = 0.0
+    sum_x = 0.0
+    sum_y = 0.0
     for i in range(len(data)):
         alpha1_1 += i * data[i] * 1.0 / len(data)
         alpha2 += i * i * 1.0 / len(data)
@@ -38,8 +42,7 @@ def linear_approximation(history: History) -> Method:
 
 
 def quadratic_approximation(history: History) -> Method:
-    data = list(zip(*history.history))[1]
-    data = [d for d in data if d is not None]
+    data = prepare_data(history)
 
     alpha2_1 = 0.0
     alpha1_1 = 0.0
@@ -82,8 +85,7 @@ def quadratic_approximation(history: History) -> Method:
 
 
 def logarithmic_approximation(history: History) -> Method:
-    data = list(zip(*history.history))[1]
-    data = [d for d in data if d is not None]
+    data = prepare_data(history)
 
     alpha1_1 = 0.0
     alpha0_1 = 0.0
@@ -108,8 +110,7 @@ def logarithmic_approximation(history: History) -> Method:
 
 
 def exponential_approximation(history: History) -> Method:
-    data = list(zip(*history.history))[1]
-    data = [d for d in data if d is not None]
+    data = prepare_data(history)
 
     alpha1_1 = 0.0
     alpha0_1 = 0.0
@@ -134,8 +135,7 @@ def exponential_approximation(history: History) -> Method:
 
 
 def holt_win_fcast(history: History) -> Method:
-    data = list(zip(*history.history))[1]
-    data = [d for d in data if d is not None]
+    data = prepare_data(history)
 
     fcast_len = 60
     train_index = int(0.9 * len(data))

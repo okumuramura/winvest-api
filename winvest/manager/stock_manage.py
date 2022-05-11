@@ -1,16 +1,42 @@
 from typing import Optional, List
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from winvest import moex_cache, moex_client
-from winvest.manager import orm_function, async_orm_function, portfolio_manage
+from winvest.manager import orm_function, async_orm_function
 from winvest.models import db, response_model
 
 
+@orm_function
+def get_stock_data(
+    user_id: int, stock_id: int, session: Session = None
+) -> Optional[response_model.StockOwned]:
+    portfolio: db.Portfolio = (
+        session.query(db.Portfolio)
+        .filter(
+            (db.Portfolio.user_id == user_id)
+            & (db.Portfolio.stock_id == stock_id)
+        )
+        .options(joinedload(db.Portfolio.stock))
+        .first()
+    )
+
+    if portfolio is None:
+        return response_model.StockOwned(
+            id=stock_id, shortname='-', owned=False, quantity=0, spent=0.0
+        )
+
+    return response_model.StockOwned(
+        id=stock_id,
+        shortname=portfolio.stock.shortname,
+        owned=True,
+        quantity=portfolio.quantity,
+        spent=portfolio.spent,
+    )
+
+
 @async_orm_function
-async def load_price(
-    stock: db.Stock, session: Session = None
-) -> Optional[response_model.Stock]:
+async def load_price(stock: db.Stock) -> Optional[response_model.Stock]:
     cached_price = moex_cache.get_price(stock.id)
 
     if cached_price is None:
@@ -49,11 +75,9 @@ async def load_list(
 
     stock_list = []
     for stock in stocks:
-        market_data = await load_price(stock, session=session)
+        market_data = await load_price(stock)
         if user:
-            owned_data = portfolio_manage.get_stock_data(
-                user.id, stock.id, session=session
-            )
+            owned_data = get_stock_data(user.id, stock.id, session=session)
             market_data.owned = owned_data.owned
             market_data.quantity = owned_data.quantity
             if market_data.price is not None:

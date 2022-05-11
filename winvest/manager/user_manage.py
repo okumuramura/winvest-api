@@ -52,7 +52,7 @@ def sign_in(
 
 @orm_function
 def get_by_id(user_id: int, session: Session = None) -> Optional[db.User]:
-    return session.query(db.User).filter(db.User.id == id).first()
+    return session.query(db.User).filter(db.User.id == user_id).first()
 
 
 @orm_function

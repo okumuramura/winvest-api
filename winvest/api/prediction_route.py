@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Path
 
@@ -15,7 +16,7 @@ router = APIRouter()
     status_code=HTTPStatus.OK,
     response_model=response_model.Methods,
 )
-async def predict_handler(stock_id: int = Path(..., ge=1)):
+async def predict_handler(stock_id: int = Path(..., ge=1)) -> Any:
     stock = stock_manage.get_by_id(stock_id=stock_id)
 
     if stock is None:
@@ -34,7 +35,7 @@ async def predict_handler(stock_id: int = Path(..., ge=1)):
         try:
             prediction = method(history=history)
             methods.append(prediction)
-        except Exception:
+        except Exception:  # pylint: disable=W0703
             logger.warning('error in prediction method %s', method.__name__)
 
     methods_model = response_model.Methods(methods=methods)

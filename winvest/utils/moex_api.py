@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 import asyncio
 
 from pydantic import BaseModel
@@ -41,7 +41,7 @@ class AsyncClient:
         _from: str,
         _till: str,
         start: int,
-    ):
+    ) -> Any:
         args = {
             'engine': 'stock',
             'market': 'shares',
@@ -59,7 +59,7 @@ class AsyncClient:
 
     async def history(
         self, security: str, _from: str, _till: str, backet_size: int = 10
-    ):
+    ) -> Any:
 
         need_more = True
         start = 0
@@ -84,7 +84,7 @@ class AsyncClient:
 
         return data
 
-    async def actual(self, board: str = 'tqbr'):
+    async def actual(self, board: str = 'tqbr') -> Any:
         args = {'engine': 'stock', 'market': 'shares', 'board': board}
 
         async with aiohttp.ClientSession() as session:

@@ -40,7 +40,9 @@ class User(Base):
         'Operation', back_populates='user'
     )
 
-    def __init__(self, login: str, password: str, in_hash=False) -> None:
+    def __init__(
+        self, login: str, password: str, in_hash: bool = False
+    ) -> None:
         self.login = login
         self.registered = datetime.datetime.now()
         if in_hash:
@@ -133,7 +135,7 @@ class Token(Base):
     user: User = relationship('User', back_populates='tokens')
 
     def __init__(self, user: Union[User, int]) -> None:
-        if type(user) == User:
+        if isinstance(user, User):
             self.user = user
         else:
             self.user_id = user

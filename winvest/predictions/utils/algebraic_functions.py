@@ -1,9 +1,7 @@
 import math
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, Tuple, List
 
 from statsmodels.tsa.api import ExponentialSmoothing
-
-from winvest.models.response_model import History, Method
 
 
 def linear(a: float, b: float, x: float) -> float:
@@ -22,7 +20,7 @@ def exponential(a: float, b: float, x: float) -> float:
     return a * math.exp(x) + b
 
 
-def holt_win(data, forecast_len):
+def holt_win(data: List[float], forecast_len: int) -> Any:
     seasonal_period = min(60, len(data) // 3)
     exp_fit = ExponentialSmoothing(
         data,
@@ -36,7 +34,7 @@ def holt_win(data, forecast_len):
 
 
 def calculate_error(
-    function: Callable[[History], Method],
+    function: Callable[..., float],
     coefficients: Tuple[float],
     data: Any,
 ) -> float:

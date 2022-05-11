@@ -12,7 +12,7 @@ from winvest.api import (
 )
 
 
-def create_app() -> FastAPI():
+def create_app() -> FastAPI:
     app = FastAPI()
     app.include_router(router=authorization_route.router)
     app.include_router(router=operations_route.router, prefix='/operations')

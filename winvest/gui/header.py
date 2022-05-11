@@ -179,14 +179,14 @@ class Header(QtWidgets.QWidget):
 
     def open_register_window(self) -> None:
         self.register_window = Header.RegisterWindow(
-            'Регистрация', Header.RegisterWindow.Types.REGISTER
+            'Регистрация', Header.RegisterWindow.Types.REGISTER.value
         )
         self.register_window.result.connect(self.login_done)
         self.register_window.show()
 
     def open_login_window(self) -> None:
         self.login_window = Header.RegisterWindow(
-            'Вход', Header.RegisterWindow.Types.LOGIN
+            'Вход', Header.RegisterWindow.Types.LOGIN.value
         )
         self.login_window.result.connect(self.login_done)
         self.login_window.show()

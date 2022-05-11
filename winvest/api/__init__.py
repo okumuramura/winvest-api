@@ -37,7 +37,7 @@ def auth(
     token: Optional[str] = Header(None, alias='authorization')
 ) -> Optional[db.User]:
     if not token:
-        return token
+        return None
     return user_manage.get_by_token(token)
 
 
